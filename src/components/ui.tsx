@@ -39,21 +39,20 @@ export function ChessArt({
       className={"chess-art " + variant + (hero ? " hero-art" : "")}
       aria-hidden="true"
     >
-      <div className="art-grid" />
-      <div className="art-orbit orbit-one" />
-      <div className="art-orbit orbit-two" />
-      <div className="art-glow" />
-      <span className="art-coordinate">Nf3</span>
-      <Knight className="art-knight shadow-knight" />
-      <Knight className="art-knight" />
-      <span className="art-caption">THE GAME IS YOURS.</span>
-      {hero && (
-        <>
-          <span className="cross c1">+</span>
-          <span className="cross c2">+</span>
-          <span className="art-index">01 / NOVEMBER CIRCUIT</span>
-        </>
-      )}
+      <img
+        className="chess-photograph"
+        src={
+          hero
+            ? "/art/golden-knight.webp"
+            : variant === "purple" || variant === "blue"
+              ? "/art/silver-knight.webp"
+              : "/art/golden-king.webp"
+        }
+        alt=""
+        loading={hero ? "eager" : "lazy"}
+        decoding="async"
+      />
+      <div className="photograph-shade" />
     </div>
   );
 }
@@ -147,8 +146,18 @@ export function Modal({
 }
 export function TournamentCard({ t }: { t: Tournament }) {
   const app = useApp();
+  const status =
+    t.status === "open"
+      ? "Registration open"
+      : t.status === "completed"
+        ? "Completed"
+        : t.status === "live"
+          ? "Live now"
+          : t.status === "draft"
+            ? "Draft"
+            : "Registration closed";
   return (
-    <article className="tournament-card">
+    <article className={"tournament-card tournament-" + t.color}>
       <Link
         href={"/tournaments/" + t.slug}
         className="card-art-link"
@@ -156,45 +165,16 @@ export function TournamentCard({ t }: { t: Tournament }) {
       >
         <ChessArt variant={t.color} />
         <div className="card-art-label">
-          <Badge>
-            {t.category.toUpperCase()} / {t.format.toUpperCase()}
+          <Badge color={t.status === "open" ? "green" : ""}>
+            {status.toUpperCase()}
           </Badge>
-          <span>{t.time_control}</span>
+          <Badge>{t.format.toUpperCase()}</Badge>
         </div>
-        <div className="card-art-title">{t.title.split(" • ")[0]}</div>
+        <span className="card-art-bottom">
+          {t.time_control} <i /> {t.category}
+        </span>
       </Link>
       <div className="card-body">
-        <div className="card-status">
-          <span
-            className={"status-dot " + (t.status === "open" ? "green" : "")}
-          />
-          <span>
-            {t.status === "open"
-              ? "Registration open"
-              : t.status === "completed"
-                ? "Completed"
-                : t.status === "live"
-                  ? "Live now"
-                  : t.status === "draft"
-                    ? "Draft"
-                    : "Registration closed"}
-          </span>
-          <button
-            className={
-              "icon-button bookmark " +
-              (app.saved.includes(t.id) ? "active" : "")
-            }
-            aria-label={
-              (app.saved.includes(t.id) ? "Unsave " : "Save ") + t.title
-            }
-            onClick={() => app.save(t.id)}
-          >
-            <Bookmark
-              size={17}
-              fill={app.saved.includes(t.id) ? "currentColor" : "none"}
-            />
-          </button>
-        </div>
         <Link href={"/tournaments/" + t.slug}>
           <h3>{t.title}</h3>
         </Link>
@@ -208,14 +188,22 @@ export function TournamentCard({ t }: { t: Tournament }) {
             {time(t.starts_at)}
           </span>
         </div>
-        <div className="card-meta">
-          <span>
-            <Users size={14} />
-            {t.participants}/{t.capacity} players
-          </span>
-          <span>
-            {t.max_rating < 3000 ? "Under " + t.max_rating : "All ratings"}
-          </span>
+        <div className="card-metrics">
+          <div>
+            <strong>{t.prize_paise ? money(t.prize_paise) : "Glory"}</strong>
+            <small>Prize pool</small>
+          </div>
+          <div>
+            <strong>{t.fee_paise ? money(t.fee_paise) : "Free"}</strong>
+            <small>Entry fee</small>
+          </div>
+          <div>
+            <strong>
+              {t.participants}
+              <em>/{t.capacity}</em>
+            </strong>
+            <small>Registered</small>
+          </div>
         </div>
         <div className="capacity-track">
           <i
@@ -225,16 +213,25 @@ export function TournamentCard({ t }: { t: Tournament }) {
           />
         </div>
         <div className="card-bottom">
-          <div>
-            <small>PRIZE POOL</small>
-            <strong>
-              {t.prize_paise ? money(t.prize_paise) : "Bragging rights"}
-            </strong>
-          </div>
-          <Link href={"/tournaments/" + t.slug} className="card-entry">
-            {t.fee_paise ? money(t.fee_paise) + " entry" : "Free entry"}
+          <Link href={"/tournaments/" + t.slug} className="button">
+            View tournament
             <ArrowUpRight size={17} />
           </Link>
+          <button
+            className={
+              "icon-button bookmark " +
+              (app.saved.includes(t.id) ? "active" : "")
+            }
+            aria-label={
+              (app.saved.includes(t.id) ? "Unsave " : "Save ") + t.title
+            }
+            onClick={() => app.save(t.id)}
+          >
+            <Bookmark
+              size={18}
+              fill={app.saved.includes(t.id) ? "currentColor" : "none"}
+            />
+          </button>
         </div>
       </div>
     </article>

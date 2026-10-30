@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -7,136 +8,123 @@ import {
   Trophy,
   Users,
   ShieldCheck,
-  Zap,
   Globe,
-  CheckCircle2,
   ChevronRight,
+  PlayCircle,
+  Search,
+  ClipboardCheck,
+  Gamepad2,
+  Crown,
+  Quote,
+  Clock3,
+  Flag,
 } from "lucide-react";
 import { useApp } from "./provider";
 import { ChessArt, TournamentCard, SectionTitle, Badge } from "./ui";
-import { date, time, money } from "@/lib/data";
+import { date, time, money, sampleStandings } from "@/lib/data";
+import { api } from "@/lib/supabase";
+import type { Standing } from "@/lib/types";
 export function Home() {
-  const app = useApp(),
-    featured = app.tournaments.find((t) => t.featured) || app.tournaments[0];
+  const app = useApp();
+  const upcoming = app.tournaments
+    .filter((t) => t.status === "open")
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const next = app.tournaments.find((t) => t.status === "live") || upcoming[0];
   return (
     <div className="page home-page">
-      <div className="page-intro">
-        <div>
-          <div className="eyebrow">
-            <span className="status-dot green" />
-            THE NEXT CHAPTER OF COMPETITIVE CHESS
-          </div>
-          <h1>
-            Welcome to the arena<span className="orange-text">.</span>
-          </h1>
-          <p>Find your tournament. Make your move. Leave your mark.</p>
-        </div>
-        <Link href="/tournaments" className="quiet-link">
-          Explore the circuit
-          <ArrowUpRight size={17} />
-        </Link>
-      </div>
-      <section className="hero">
+      <section className="hero premium-hero">
+        <ChessArt hero />
         <div className="hero-copy">
           <div className="hero-kicker">
             <span />
-            NOVEMBER CIRCUIT 2026
+            COMPETITIVE CHESS TOURNAMENTS
           </div>
-          <h2>
-            Your next move.
+          <h1>
+            <em>A higher</em>
             <br />
-            Your next <em>victory.</em>
-          </h2>
+            level of chess.
+          </h1>
           <p>
-            Real competition. A level playing field.
-            <br />
-            Online chess tournaments for the player in you.
+            Discover tournaments. Test your skills.
+            <br className="mobile-break" /> Compete for glory.
           </p>
           <div className="hero-buttons">
             <Link className="button" href="/tournaments">
-              Find your tournament
-              <ArrowUpRight size={18} />
+              Explore tournaments
+              <ArrowRight size={18} />
             </Link>
             <Link className="hero-secondary" href="/about">
+              <PlayCircle size={18} />
               How it works
-              <ArrowRight size={16} />
             </Link>
           </div>
           <div className="hero-platform">
             <ShieldCheck size={15} />
             <span>
-              Organized here. Played on <b>chess.com</b>
-              <ArrowUpRight size={11} />
+              Organized here. Played on <b>Chess.com</b>
+              <ArrowUpRight size={12} />
             </span>
           </div>
         </div>
-        <ChessArt hero />
-        <div className="hero-bottom-label">
-          <span className="status-dot green" />
-          YOUR COMPETITIVE EDGE STARTS HERE<span>EST. 2026</span>
+        <div className="hero-quote">
+          <Quote size={23} />
+          <p>
+            Not just a game.
+            <br />
+            <strong>A battlefield of minds.</strong>
+          </p>
+          <span />
+        </div>
+        <div className="stats-row hero-stats">
+          {[
+            {
+              icon: Users,
+              value: app.demo
+                ? "730"
+                : String(
+                    app.tournaments.reduce((n, t) => n + t.participants, 0),
+                  ),
+              label: app.demo ? "Sample player entries" : "Player entries",
+            },
+            {
+              icon: Trophy,
+              value: String(upcoming.length).padStart(2, "0"),
+              label: "Open tournaments",
+            },
+            {
+              icon: Flag,
+              value: String(
+                app.tournaments.filter((t) => t.status === "completed").length,
+              ).padStart(2, "0"),
+              label: "Completed events",
+            },
+            {
+              icon: Globe,
+              value: money(upcoming.reduce((n, t) => n + t.prize_paise, 0)),
+              label: app.demo ? "Sample prize pools" : "Listed prize pools",
+            },
+          ].map((s) => (
+            <div className="stat" key={s.label}>
+              <span className="stat-icon">
+                <s.icon size={24} />
+              </span>
+              <div>
+                <strong>{s.value}</strong>
+                <span>{s.label}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
-      <div className="stats-row">
-        {[
-          {
-            icon: Trophy,
-            value: String(
-              app.tournaments.filter((t) => t.status === "open").length,
-            ).padStart(2, "0"),
-            label: "Open tournaments",
-            detail: "Your next challenge awaits",
-          },
-          {
-            icon: Users,
-            value: app.demo
-              ? "730"
-              : String(app.tournaments.reduce((n, t) => n + t.participants, 0)),
-            label: app.demo ? "Sample player entries" : "Player entries",
-            detail: "One shared love for the game",
-          },
-          {
-            icon: Zap,
-            value: money(
-              app.tournaments
-                .filter((t) => t.status === "open")
-                .reduce((n, t) => n + t.prize_paise, 0),
-            ),
-            label: app.demo ? "Sample prize pools" : "Listed prize pools",
-            detail: "Make every move count",
-          },
-          {
-            icon: Globe,
-            value: "100% online",
-            label: "Play from anywhere",
-            detail: "Every game on Chess.com",
-          },
-        ].map((s, i) => (
-          <div className="stat" key={s.label}>
-            <span className={"stat-icon stat-" + i}>
-              <s.icon size={20} />
-            </span>
-            <div>
-              <strong>{s.value}</strong>
-              <span>{s.label}</span>
-              <small>{s.detail}</small>
-            </div>
-          </div>
-        ))}
-      </div>
       <section className="home-tournaments">
         <SectionTitle
-          eyebrow="FIND YOUR NEXT CHALLENGE"
-          title="Tournaments in the spotlight"
+          title="Featured tournaments"
           href="/tournaments"
-          label="All tournaments"
+          label="View all tournaments"
         />
         <div className="spotlight-toolbar">
-          <div>
-            <span className="live-indicator" />
-            <strong>Registration is open</strong>
-            <span className="muted">Your seat at the board is waiting.</span>
-          </div>
-          <span className="time-zone">All times in IST (UTC+5:30)</span>
+          <p>Handpicked tournaments you won’t want to miss.</p>
+          <span className="time-zone">All times in IST · UTC+5:30</span>
         </div>
         <div className="tournament-grid">
           {app.tournaments
@@ -146,20 +134,80 @@ export function Home() {
               <TournamentCard key={t.id} t={t} />
             ))}
         </div>
-        {!app.ready && <div className="loading-line">Loading the arena…</div>}
+        {!app.ready && !app.demo && (
+          <div className="loading-line">Loading the arena…</div>
+        )}
       </section>
-      <div className="home-lower">
-        <section className="panel schedule-panel">
+      {next && (
+        <section className="next-arena">
           <SectionTitle
-            title="On the horizon"
+            title={
+              next.status === "live" ? "Live in the arena" : "Next in the arena"
+            }
+            href={
+              next.status === "live"
+                ? "/tournaments?status=live"
+                : "/tournaments"
+            }
+            label={
+              next.status === "live"
+                ? "View live events"
+                : "Explore the schedule"
+            }
+          />
+          <Link className="arena-feature" href={"/tournaments/" + next.slug}>
+            <div className="arena-feature-art">
+              <ChessArt variant={next.color} />
+              <Badge color={next.status === "live" ? "red" : "orange"}>
+                {next.status === "live" ? "● LIVE NOW" : "UP NEXT"}
+              </Badge>
+            </div>
+            <div className="arena-feature-copy">
+              <div className="eyebrow">YOUR NEXT CHALLENGE AWAITS</div>
+              <h3>{next.title}</h3>
+              <div className="arena-tags">
+                <Badge>{next.format}</Badge>
+                <Badge>{next.time_control}</Badge>
+                <Badge>
+                  <Globe size={12} />
+                  Chess.com
+                </Badge>
+              </div>
+              <p>
+                <CalendarDays size={14} />
+                {date(next.starts_at, true)}
+                <span>·</span>
+                {time(next.starts_at)}
+              </p>
+            </div>
+            <div className="arena-feature-prize">
+              <small>PLAY FOR SOMETHING BIGGER</small>
+              <strong>
+                {next.prize_paise
+                  ? money(next.prize_paise)
+                  : "The love of the game"}
+              </strong>
+              <span>
+                <Users size={14} />
+                {next.participants} / {next.capacity} players registered
+              </span>
+            </div>
+            <span className="arena-feature-arrow">
+              <ArrowUpRight size={23} />
+            </span>
+          </Link>
+        </section>
+      )}
+      <div className="home-lower">
+        <section className="schedule-panel">
+          <SectionTitle
+            title="Upcoming tournaments"
             href="/tournaments"
             label="Full schedule"
           />
-          {app.tournaments
-            .filter((t) => t.status === "open")
-            .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-            .slice(0, 3)
-            .map((t) => (
+          <p className="section-subtitle">See what’s coming next.</p>
+          <div className="schedule-list">
+            {upcoming.slice(0, 4).map((t) => (
               <Link
                 href={"/tournaments/" + t.slug}
                 className="schedule-row"
@@ -179,75 +227,74 @@ export function Home() {
                     })}
                   </strong>
                 </div>
-                <div>
+                <div className="schedule-thumb">
+                  <ChessArt variant={t.color} />
+                </div>
+                <div className="schedule-copy">
                   <h3>{t.title}</h3>
                   <p>
-                    {t.category} · {t.time_control} · {time(t.starts_at)}
+                    {t.category} <span>·</span> {t.time_control} <span>·</span>{" "}
+                    {time(t.starts_at)}
                   </p>
                 </div>
                 <Badge color={t.fee_paise ? "" : "green"}>
                   {t.fee_paise ? money(t.fee_paise) : "Free"}
                 </Badge>
-                <ChevronRight size={17} />
+                <ChevronRight size={16} />
               </Link>
             ))}
-        </section>
-        <section className="community-teaser">
-          <div className="eyebrow">BETTER TOGETHER</div>
-          <div className="community-avatars">
-            <span>AS</span>
-            <span>MK</span>
-            <span>RV</span>
-            <span>
-              <Users size={17} />
-            </span>
           </div>
-          <h2>
-            More than a leaderboard.
-            <br />
-            Find your chess people.
-          </h2>
-          <p>
-            Trade ideas, find practice partners, and talk through the moves that
-            mattered.
-          </p>
-          <Link href="/community" className="text-link">
-            Join the conversation
-            <ArrowUpRight size={17} />
-          </Link>
         </section>
+        <HomeLeaderboard />
       </div>
-      <section className="how-strip">
-        <div>
-          <div className="eyebrow">FROM FIRST CLICK TO FIRST MOVE</div>
-          <h2>Less setup. More chess.</h2>
+      <section className="how-section">
+        <SectionTitle title="How it works">
+          <span className="section-subtitle">
+            Your next great game is just a few moves away.
+          </span>
+        </SectionTitle>
+        <div className="how-strip">
+          {[
+            {
+              n: "01",
+              icon: Search,
+              title: "Discover",
+              body: "Find a tournament that matches your pace and rating.",
+            },
+            {
+              n: "02",
+              icon: ClipboardCheck,
+              title: "Register",
+              body: "Verify a player and secure a seat at the board.",
+            },
+            {
+              n: "03",
+              icon: Gamepad2,
+              title: "Compete",
+              body: "Check in, join Chess.com, and make your moves.",
+            },
+            {
+              n: "04",
+              icon: Trophy,
+              title: "Rise",
+              body: "Track reviewed results. Celebrate every improvement.",
+            },
+          ].map((s) => (
+            <div className="how-step" key={s.n}>
+              <span>{s.n}</span>
+              <div className="how-icon">
+                <s.icon size={26} />
+              </div>
+              <div>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+              </div>
+            </div>
+          ))}
         </div>
-        {[
-          {
-            n: "01",
-            title: "Find your arena",
-            body: "Pick your pace, rating, and stakes.",
-          },
-          {
-            n: "02",
-            title: "Secure your spot",
-            body: "Verify a player and register in minutes.",
-          },
-          {
-            n: "03",
-            title: "Make your move",
-            body: "Check in and compete on Chess.com.",
-          },
-        ].map((s) => (
-          <div className="how-step" key={s.n}>
-            <span>{s.n}</span>
-            <h3>{s.title}</h3>
-            <p>{s.body}</p>
-          </div>
-        ))}
       </section>
       <div className="fairplay-strip">
-        <ShieldCheck size={22} />
+        <ShieldCheck size={24} />
         <div>
           <strong>Good chess starts with fair play.</strong>
           <span>Real players. Clear rules. Respect for the game.</span>
@@ -258,5 +305,58 @@ export function Home() {
         </Link>
       </div>
     </div>
+  );
+}
+function HomeLeaderboard() {
+  const app = useApp();
+  const [rows, setRows] = useState<Standing[]>(app.demo ? sampleStandings : []);
+  const completed = app.tournaments.find((t) => t.status === "completed");
+  useEffect(() => {
+    if (!app.demo && completed)
+      api("tournament/details?id=" + completed.id)
+        .then((d) => setRows(d.standings))
+        .catch(() => setRows([]));
+  }, [app.demo, completed]);
+  return (
+    <section className="home-leaderboard">
+      <SectionTitle
+        title="Circuit leaderboard"
+        href="/leaderboard"
+        label="View leaderboard"
+      />
+      <p className="section-subtitle">
+        {app.demo
+          ? "October circuit · Sample results"
+          : "The latest organizer-reviewed results."}
+      </p>
+      <div className="leaderboard-panel">
+        <div className="leaderboard-heading">
+          <span>#</span>
+          <span>Player</span>
+          <span>Score</span>
+        </div>
+        {[...rows]
+          .sort((a, b) => b.score - a.score || b.tiebreak - a.tiebreak)
+          .slice(0, 5)
+          .map((s, i) => (
+            <div className="leaderboard-row" key={s.username}>
+              <span className={"podium podium-" + i}>
+                {i < 3 ? <Crown size={20} /> : i + 1}
+              </span>
+              <span className={"leaderboard-avatar avatar-" + i}>
+                {s.username.slice(0, 2).toUpperCase()}
+              </span>
+              <strong>{s.username}</strong>
+              <span className="leaderboard-score">{s.score.toFixed(1)}</span>
+            </div>
+          ))}
+        {!rows.length && (
+          <p className="leaderboard-empty">
+            The next champions are still making their moves. Reviewed standings
+            will appear here.
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
