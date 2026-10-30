@@ -42,6 +42,7 @@ export function Community() {
   const filtered = app.posts
     .filter(
       (p) =>
+        !p.hidden &&
         (!params.get("tournament") ||
           p.tournament_id === params.get("tournament")) &&
         (category === "All discussions" || p.category === category) &&
@@ -88,6 +89,7 @@ export function Community() {
         </div>
         <button
           className="button"
+          disabled={app.settings?.community_enabled === false}
           onClick={() => {
             if (app.requireAuth()) setCompose(true);
           }}
@@ -424,10 +426,10 @@ function Discussion({ post, onClose }: { post: Post; onClose: () => void }) {
       {!comments.length && (
         <p className="muted">Be the first to add a thoughtful reply.</p>
       )}
-      {post.locked ? (
+      {post.locked || app.settings?.community_enabled === false ? (
         <div className="info-panel">
           <Lock size={16} />
-          This discussion has been locked by a moderator.
+          Replies are temporarily closed.
         </div>
       ) : (
         <form

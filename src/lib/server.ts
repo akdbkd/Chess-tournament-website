@@ -3,14 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import type { ChessPlayer, Profile } from "./types";
 import { usernameSchema } from "./validation";
-export class HttpError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
+import { HttpError } from "./http";
+export { HttpError } from "./http";
 export function db() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,8 +15,12 @@ export function db() {
   });
 }
 export async function user(req: NextRequest): Promise<Profile> {
-  const token = req.headers.get("authorization")?.replace(/^Bearer /, "");
+  const token = req.headers
+    .get("authorization")
+    ?.match(/^Bearer ([^\s]{1,8192})$/i)?.[1];
   if (!token) throw new HttpError(401, "Please sign in to continue.");
+  if (process.env.NEXT_PUBLIC_DEMO_MODE !== "false")
+    throw new HttpError(503, "Live account actions are disabled in demo mode.");
   const client = db();
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user)
@@ -33,9 +31,28 @@ export async function user(req: NextRequest): Promise<Profile> {
     .eq("id", data.user.id)
     .single();
   if (p.error) throw new HttpError(403, "Account profile unavailable.");
-  return { ...p.data, email: data.user.email };
+  if (p.data.status === "suspended")
+    throw new HttpError(
+      403,
+      "This account is suspended. Contact support.",
+      "ACCOUNT_SUSPENDED",
+    );
+  // getUser above validates the token remotely before its signed AAL claim is used.
+  const claims = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64url").toString(),
+  );
+  return { ...p.data, email: data.user.email, aal: claims.aal };
+}
+export function privileged(p: Profile) {
+  if (p.aal !== "aal2")
+    throw new HttpError(
+      403,
+      "Verify your authenticator in Account settings before managing the platform.",
+      "MFA_REQUIRED",
+    );
 }
 export async function organizer(p: Profile, id?: string) {
+  privileged(p);
   if (p.role === "ADMIN") return;
   if (p.role !== "ORGANIZER")
     throw new HttpError(403, "Organizer access is required.");
@@ -52,6 +69,7 @@ export async function organizer(p: Profile, id?: string) {
 export function administrator(p: Profile) {
   if (p.role !== "ADMIN")
     throw new HttpError(403, "Administrator access is required.");
+  privileged(p);
 }
 export async function rate(key: string, limit = 20, seconds = 60) {
   const { data, error } = await db().rpc("consume_rate_limit", {
@@ -68,9 +86,14 @@ export async function rate(key: string, limit = 20, seconds = 60) {
 }
 export function checked<T>(r: {
   data: T;
-  error: { message: string } | null;
+  error: { message: string; code?: string } | null;
 }): T {
   if (r.error) {
+    if (r.error.code === "PGRST116")
+      throw new HttpError(404, "Record not found.");
+    if (r.error.code === "42501")
+      throw new HttpError(403, "You do not have permission for this action.");
+    if (r.error.code === "P0001") throw new HttpError(409, r.error.message);
     if (/duplicate|unique/i.test(r.error.message))
       throw new HttpError(409, "This record already exists.");
     if (
@@ -106,7 +129,12 @@ export function validSignature(
     timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
   );
 }
-export async function razor(path: string, method = "GET", body?: object) {
+export async function razor(
+  path: string,
+  method = "GET",
+  body?: object,
+  extraHeaders: Record<string, string> = {},
+) {
   const key = process.env.RAZORPAY_KEY_ID,
     secret = process.env.RAZORPAY_KEY_SECRET;
   if (!key || !secret)
@@ -120,6 +148,7 @@ export async function razor(path: string, method = "GET", body?: object) {
       Authorization:
         "Basic " + Buffer.from(key + ":" + secret).toString("base64"),
       "Content-Type": "application/json",
+      ...extraHeaders,
     },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(12000),
@@ -164,10 +193,7 @@ export async function chessPlayer(
   };
   const profile = await fetchChess(""),
     stats = await fetchChess("/stats");
-  if (
-    profile.status === "closed:fair_play_violations" ||
-    profile.status === "closed:abuse"
-  )
+  if (String(profile.status || "").startsWith("closed"))
     throw new HttpError(400, "This Chess.com account is closed.");
   const rating =
     stats[

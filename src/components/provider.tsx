@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { api, demoMode, supabase } from "@/lib/supabase";
 import { tournaments as samples, posts as samplePosts } from "@/lib/data";
@@ -23,6 +24,15 @@ type Store = {
   posts: Post[];
   notices: Notice[];
   profile: Profile | null;
+  settings: {
+    support_email: string;
+    community_enabled: boolean;
+    registrations_enabled: boolean;
+    announcement: string;
+    operator_name: string;
+    jurisdiction: string;
+    retention_days: number;
+  } | null;
 };
 type App = Store & {
   ready: boolean;
@@ -48,6 +58,7 @@ const initial: Store = {
   posts: demoMode ? samplePosts : [],
   notices: [],
   profile: null,
+  settings: null,
 };
 export function Provider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store>(initial),
@@ -57,6 +68,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
     [toast, setToast] = useState<{ message: string; error: boolean } | null>(
       null,
     );
+  const refreshGeneration = useRef(0);
   const update = useCallback(
     (v: Partial<Store>) => setStore((s) => ({ ...s, ...v })),
     [],
@@ -67,22 +79,32 @@ export function Provider({ children }: { children: React.ReactNode }) {
   );
   const refresh = useCallback(async () => {
     if (demoMode) return;
+    const generation = ++refreshGeneration.current;
     try {
-      const [tournaments, posts] = await Promise.all([
+      const session = (await supabase?.auth.getSession())?.data.session;
+      const [tournaments, posts, settings] = await Promise.all([
         api("tournaments"),
         api("posts"),
+        api("settings/public"),
       ]);
-      update({ tournaments, posts });
-      if (supabase && (await supabase.auth.getSession()).data.session) {
-        const me = await api("me");
-        update(me);
-      } else
-        update({ profile: null, registrations: [], saved: [], notices: [] });
+      const me = session
+        ? await api("me")
+        : { profile: null, registrations: [], saved: [], notices: [] };
+      const current = (await supabase?.auth.getSession())?.data.session;
+      if (
+        refreshGeneration.current !== generation ||
+        current?.access_token !== session?.access_token
+      )
+        return;
+      update({ tournaments, posts, settings, ...me });
       setError("");
     } catch (e) {
+      if (refreshGeneration.current !== generation) return;
       setError((e as Error).message);
+      // Never retain another session's private data after auth/account failure.
+      update({ profile: null, registrations: [], saved: [], notices: [] });
     } finally {
-      setReady(true);
+      if (refreshGeneration.current === generation) setReady(true);
     }
   }, [update]);
   useEffect(() => {
@@ -216,6 +238,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
         save,
         action,
         signout: async () => {
+          refreshGeneration.current++;
           await supabase?.auth.signOut();
           update({
             profile: null,

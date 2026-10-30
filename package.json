@@ -1,6 +1,6 @@
 {
   "name": "knightfall-arena",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
@@ -10,15 +10,17 @@
     "test": "tsx --test tests/*.test.ts",
     "seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
     "format": "prettier --write src tests scripts next.config.ts",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.cjs",
+    "prebuild": "node --env-file-if-exists=.env.local scripts/check-environment.mjs",
+    "check:production": "node --env-file-if-exists=.env.local scripts/check-environment.mjs --production"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "lucide-react": "^0.468.0",
-    "next": "^15.5.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "zod": "^3.24.0"
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.13",

@@ -304,6 +304,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       </div>
     );
   const closed =
+    app.settings?.registrations_enabled === false ||
     t.status !== "open" ||
     new Date(t.registration_closes).getTime() < Date.now() ||
     t.participants >= t.capacity;

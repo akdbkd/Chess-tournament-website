@@ -69,8 +69,21 @@ export default async function Page({ params }: Props) {
         return <ResetPassword />;
     }
   }
-  if (s.length === 2 && s[0] === "tournaments")
+  if (s.length === 2 && s[0] === "tournaments") {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== "true") {
+      const { db, checked } = await import("@/lib/server");
+      const found = checked(
+        await db()
+          .from("tournaments")
+          .select("id")
+          .eq("slug", s[1])
+          .not("status", "in", "(draft,archived)")
+          .maybeSingle(),
+      );
+      if (!found) notFound();
+    }
     return <TournamentDetail slug={s[1]} />;
+  }
   if (
     s.length === 2 &&
     s[0] === "legal" &&

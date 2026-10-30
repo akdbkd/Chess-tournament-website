@@ -23,6 +23,7 @@ export type Tournament = {
   auto_approve: boolean;
   featured: boolean;
   color: string;
+  updated_at?: string;
 };
 export type ChessPlayer = {
   username: string;
@@ -49,6 +50,9 @@ export type Profile = {
   display_name: string;
   role: Role;
   email?: string;
+  status?: "active" | "suspended";
+  suspension_reason?: string;
+  aal?: "aal1" | "aal2";
 };
 export type Post = {
   tournament_id?: string | null;

@@ -128,14 +128,16 @@ const base = process.env.TEST_BASE_URL || "http://localhost:3000";
     .getByRole("row")
     .filter({ hasText: "QA Rapid Invitational" });
   await row.waitFor();
-  await row.getByTitle("Edit tournament").click();
+  await row.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByLabel("Tournament name").fill("QA Rapid Championship");
   await page.getByRole("button", { name: "Save tournament" }).click();
   await page.locator(".modal").waitFor({ state: "hidden" });
   const edited = page
     .getByRole("row")
     .filter({ hasText: "QA Rapid Championship" });
-  await edited.getByTitle("Import standings").click();
+  await edited
+    .getByRole("button", { name: "Import standings", exact: true })
+    .click();
   await page
     .getByLabel("CSV data")
     .fill(
@@ -163,6 +165,65 @@ const base = process.env.TEST_BASE_URL || "http://localhost:3000";
     .click();
   await page.getByText("withdrawn", { exact: true }).waitFor();
   checks.push("Withdrawal confirmation");
+  await page.goto(base + "/admin", { waitUntil: "networkidle" });
+  await page
+    .locator(".admin-nav")
+    .getByRole("button", { name: "Community", exact: true })
+    .click();
+  const postRow = page
+    .getByRole("row")
+    .filter({ hasText: "A new practice challenge" });
+  await postRow.getByRole("button", { name: "hide", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm change", exact: true })
+    .click();
+  await postRow.getByText("Hidden · Open", { exact: true }).waitFor();
+  await postRow.getByRole("button", { name: "restore", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm change", exact: true })
+    .click();
+  await postRow.getByText("Visible · Open", { exact: true }).waitFor();
+  checks.push("Moderation hide and restore");
+  await page
+    .locator(".admin-nav")
+    .getByRole("button", { name: "Tournaments", exact: true })
+    .click();
+  const cancelRow = page
+    .getByRole("row")
+    .filter({ hasText: "QA Rapid Championship" });
+  await cancelRow
+    .getByRole("button", { name: "Cancel event", exact: true })
+    .click();
+  await page
+    .getByLabel("Reason for players")
+    .fill("Organizer cannot host this event.");
+  await page
+    .getByRole("button", { name: "Cancel tournament", exact: true })
+    .click();
+  await cancelRow.getByText("cancelled", { exact: true }).waitFor();
+  checks.push("Tournament cancellation confirmation");
+  const firstResponse = await page.request.get(base + "/");
+  const secondResponse = await page.request.get(base + "/");
+  const csp = firstResponse.headers()["content-security-policy"];
+  assert.match(csp, /'nonce-/);
+  assert.notEqual(csp, secondResponse.headers()["content-security-policy"]);
+  assert.equal(firstResponse.headers()["x-frame-options"], "DENY");
+  assert.equal(
+    (await page.request.get(base + "/api/health")).headers()["cache-control"],
+    "private, no-store, max-age=0",
+  );
+  assert.equal(
+    (
+      await page.request.post(base + "/api/profile", {
+        headers: { origin: "https://untrusted.example" },
+        data: { display_name: "Invalid" },
+      })
+    ).status(),
+    403,
+  );
+  checks.push(
+    "Security headers, per-request nonces, private caching and origin checks",
+  );
   const mobile = await browser.newPage({
     viewport: { width: 390, height: 844 },
   });

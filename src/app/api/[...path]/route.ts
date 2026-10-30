@@ -1,3 +1,4 @@
+import { timingSafeEqual, createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -18,12 +19,87 @@ import {
   tournamentSchema,
   eligibility,
 } from "@/lib/validation";
+import { readBody, parseJson } from "@/lib/http";
+import { adminCollection, exportRegistrations } from "@/lib/admin-server";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ path: string[] }> };
 const uuid = z.string().uuid();
 const demoLookupLimits = new Map<string, { n: number; until: number }>();
+async function requestRefund(
+  p: import("@/lib/types").Profile,
+  orderId: string,
+) {
+  const o = checked(
+    await db()
+      .from("payment_orders")
+      .select("*")
+      .eq("order_id", orderId)
+      .single(),
+  );
+  await organizer(p, o.tournament_id);
+  const claim = checked(
+    await db().rpc("claim_refund", { p_actor: p.id, p_order: orderId }),
+  );
+  const existing = await razor(
+    "payments/" + o.payment_id + "/refunds?count=100",
+  );
+  let refund = existing.items?.find(
+    (x: { amount: number; status: string }) =>
+      x.amount === o.amount_paise && x.status !== "failed",
+  );
+  if (!refund && !claim.claimed) {
+    const failed = existing.items?.find(
+      (x: { id: string; status: string }) =>
+        x.id === claim.provider_refund_id && x.status === "failed",
+    );
+    if (failed)
+      checked(
+        await db()
+          .from("refund_requests")
+          .update({ state: "failed", updated_at: new Date().toISOString() })
+          .eq("order_id", orderId)
+          .neq("state", "processed"),
+      );
+    throw new HttpError(
+      409,
+      failed
+        ? "The provider marked this refund failed. Retry to create a new refund request."
+        : "The submitted refund is still processing. Check again later.",
+    );
+  }
+  if (!refund)
+    refund = await razor(
+      "payments/" + o.payment_id + "/refund",
+      "POST",
+      {
+        amount: o.amount_paise,
+        notes: { order_id: orderId, refund_request_id: claim.request_id },
+      },
+      { "X-Refund-Idempotency": claim.request_id },
+    );
+  if (refund.status === "processed")
+    checked(
+      await db().rpc("process_refund", {
+        p_payment: o.payment_id,
+        p_refund: refund.id,
+        p_amount: refund.amount,
+      }),
+    );
+  else
+    checked(
+      await db()
+        .from("refund_requests")
+        .update({
+          state: "submitted",
+          provider_refund_id: refund.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", orderId)
+        .neq("state", "processed"),
+    );
+}
 async function handle(req: NextRequest, ctx: Context) {
   try {
     const path = (await ctx.params).path.join("/"),
@@ -37,12 +113,38 @@ async function handle(req: NextRequest, ctx: Context) {
       )
         throw new HttpError(403, "Request origin not allowed.");
     }
+    if (path === "cron/maintenance" && method === "GET") {
+      const secret = process.env.CRON_SECRET;
+      if (!secret || secret.length < 32)
+        throw new HttpError(503, "Scheduler is not configured.");
+      const digest = (v: string) => createHash("sha256").update(v).digest();
+      if (
+        !timingSafeEqual(
+          digest(req.headers.get("authorization") || ""),
+          digest("Bearer " + secret),
+        )
+      )
+        throw new HttpError(401, "Invalid scheduler authorization.");
+      return NextResponse.json(checked(await db().rpc("run_maintenance")));
+    }
+    if (path === "health" && method === "GET")
+      return NextResponse.json({
+        status: "ok",
+        service: "knightfall-arena",
+        mode: process.env.NEXT_PUBLIC_DEMO_MODE === "true" ? "demo" : "live",
+      });
     if (path === "chess/player" && method === "GET") {
       const key =
         "lookup:" +
-        (req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown");
+        createHash("sha256")
+          .update(
+            (req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown")
+              .trim()
+              .slice(0, 64),
+          )
+          .digest("hex");
       if (
-        process.env.NEXT_PUBLIC_DEMO_MODE !== "false" &&
+        process.env.NEXT_PUBLIC_DEMO_MODE === "true" &&
         !process.env.SUPABASE_SERVICE_ROLE_KEY
       ) {
         const v = demoLookupLimits.get(key);
@@ -69,7 +171,7 @@ async function handle(req: NextRequest, ctx: Context) {
     if (path === "payments/webhook" && method === "POST") {
       const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
       if (!secret) throw new HttpError(503, "Webhook is not configured.");
-      const raw = await req.text();
+      const raw = await readBody(req, 262144);
       if (
         !validSignature(
           raw,
@@ -78,9 +180,31 @@ async function handle(req: NextRequest, ctx: Context) {
         )
       )
         throw new HttpError(401, "Invalid webhook signature.");
-      const event = JSON.parse(raw);
+      const event = z
+        .object({ event: z.string(), payload: z.unknown() })
+        .parse(parseJson(raw));
       if (event.event === "payment.captured") {
-        const p = event.payload.payment.entity;
+        const p = z
+          .object({
+            payment: z.object({
+              entity: z.object({
+                currency: z.literal("INR"),
+                status: z.literal("captured"),
+                order_id: z.string().regex(/^order_[a-zA-Z0-9]+$/),
+                id: z.string().regex(/^pay_[a-zA-Z0-9]+$/),
+                amount: z.number().int().positive(),
+              }),
+            }),
+          })
+          .parse(event.payload).payment.entity;
+        const known = checked(
+          await db()
+            .from("payment_orders")
+            .select("order_id")
+            .eq("order_id", p.order_id)
+            .maybeSingle(),
+        );
+        if (!known) return NextResponse.json({ received: true, ignored: true });
         if (p.currency !== "INR" || p.status !== "captured")
           throw new HttpError(400, "Invalid payment currency or state.");
         checked(
@@ -92,30 +216,54 @@ async function handle(req: NextRequest, ctx: Context) {
         );
       }
       if (event.event === "refund.processed") {
-        const r = event.payload.refund.entity;
-        const row = checked(
-          await db()
-            .from("payment_orders")
-            .select("*")
-            .eq("payment_id", r.payment_id)
-            .maybeSingle(),
+        const r = z
+          .object({
+            refund: z.object({
+              entity: z.object({
+                payment_id: z.string().regex(/^pay_[a-zA-Z0-9]+$/),
+                id: z.string().regex(/^rfnd_[a-zA-Z0-9]+$/),
+                amount: z.number().int().positive(),
+                status: z.literal("processed"),
+              }),
+            }),
+          })
+          .parse(event.payload).refund.entity;
+        checked(
+          await db().rpc("process_refund", {
+            p_payment: z
+              .string()
+              .regex(/^pay_[a-zA-Z0-9]+$/)
+              .parse(r.payment_id),
+            p_refund: z
+              .string()
+              .regex(/^rfnd_[a-zA-Z0-9]+$/)
+              .parse(r.id),
+            p_amount: z.number().int().positive().parse(r.amount),
+          }),
         );
-        if (row && r.amount === row.amount_paise) {
-          checked(
-            await db()
-              .from("payment_orders")
-              .update({ payment_status: "refunded" })
-              .eq("order_id", row.order_id),
-          );
-          checked(
-            await db()
-              .from("registrations")
-              .update({ payment_status: "refunded", status: "withdrawn" })
-              .eq("payment_id", r.payment_id),
-          );
-        }
       }
       return NextResponse.json({ received: true });
+    }
+    if (
+      process.env.NEXT_PUBLIC_DEMO_MODE !== "true" &&
+      [
+        "tournaments",
+        "settings/public",
+        "posts",
+        "tournament/details",
+        "comments",
+      ].includes(path) &&
+      method === "GET"
+    ) {
+      const ip = (
+        req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+      )
+        .trim()
+        .slice(0, 64);
+      await rate(
+        "public:" + createHash("sha256").update(ip).digest("hex"),
+        120,
+      );
     }
     if (path === "tournaments" && method === "GET") {
       const rows =
@@ -138,7 +286,9 @@ async function handle(req: NextRequest, ctx: Context) {
         checked(
           await db()
             .from("site_settings")
-            .select("support_email,community_enabled")
+            .select(
+              "support_email,community_enabled,registrations_enabled,announcement,operator_name,jurisdiction,retention_days",
+            )
             .single(),
         ),
       );
@@ -200,6 +350,11 @@ async function handle(req: NextRequest, ctx: Context) {
     }
     const p = await user(req);
     await rate("user:" + p.id, 100);
+    if (path.startsWith("admin/") && method === "GET") {
+      if (path === "admin/export") return await exportRegistrations(req, p);
+      const response = await adminCollection(req, p, path.slice(6));
+      if (response) return response;
+    }
     if (path === "me" && method === "GET") {
       const c = db();
       const registrations = checked(
@@ -235,7 +390,8 @@ async function handle(req: NextRequest, ctx: Context) {
       let q = db()
         .from("tournaments")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (p.role !== "ADMIN") q = q.eq("organizer_id", p.id);
       const tournaments = checked(await q) || [];
       const ids = tournaments.map((t) => t.id);
@@ -245,46 +401,32 @@ async function handle(req: NextRequest, ctx: Context) {
               .from("registrations")
               .select("*")
               .in("tournament_id", ids)
-              .order("created_at", { ascending: false }),
+              .order("created_at", { ascending: false })
+              .limit(100),
           )
         : [];
-      const profiles =
-        p.role === "ADMIN"
-          ? checked(await db().from("profiles").select("*").limit(200))
-          : [];
-      const logs =
-        p.role === "ADMIN"
-          ? checked(
-              await db()
-                .from("audit_logs")
-                .select("*")
-                .order("created_at", { ascending: false })
-                .limit(50),
-            )
-          : [];
-      const reports =
-        p.role === "ADMIN"
-          ? checked(await db().from("reports").select("*").eq("status", "open"))
-          : [];
-      const refunds = ids.length
-        ? checked(
-            await db()
-              .from("payment_orders")
-              .select("*")
-              .in("tournament_id", ids)
-              .eq("payment_status", "refund_requested"),
-          )
-        : [];
+      const summary = checked(
+        await db().rpc("admin_summary", { p_actor: p.id }),
+      );
       return NextResponse.json({
         tournaments,
         registrations,
-        profiles,
-        logs,
-        reports,
-        refunds,
+        profiles: [],
+        logs: [],
+        reports: [],
+        refunds: [],
+        summary,
       });
     }
-    const body = method === "GET" ? {} : await req.json();
+    if (
+      method !== "GET" &&
+      !req.headers
+        .get("content-type")
+        ?.toLowerCase()
+        .startsWith("application/json")
+    )
+      throw new HttpError(415, "Use application/json for API requests.");
+    const body = method === "GET" ? {} : parseJson(await readBody(req));
     if (path === "registration" && method === "POST") {
       await rate("registration:" + p.id, 8);
       const v = registrationSchema.parse(body);
@@ -365,24 +507,16 @@ async function handle(req: NextRequest, ctx: Context) {
           receipt: r.id,
           notes: { registration_id: r.id },
         });
-        checked(
-          await db().from("payment_orders").insert({
-            order_id: order.id,
-            registration_id: r.id,
-            tournament_id: t.id,
-            user_id: p.id,
-            amount_paise: r.amount_paise,
-            expires_at: r.expires_at,
+        const linked = checked(
+          await db().rpc("attach_payment_order", {
+            p_actor: p.id,
+            p_registration: r.id,
+            p_order: order.id,
+            p_expires: r.expires_at,
           }),
         );
-        checked(
-          await db()
-            .from("registrations")
-            .update({ order_id: order.id })
-            .eq("id", r.id),
-        );
         return NextResponse.json({
-          registration: { ...r, order_id: order.id },
+          registration: linked,
           order,
           key: process.env.RAZORPAY_KEY_ID,
         });
@@ -391,7 +525,8 @@ async function handle(req: NextRequest, ctx: Context) {
           .from("registrations")
           .update({ status: "withdrawn" })
           .eq("id", r.id)
-          .eq("payment_status", "unpaid");
+          .eq("payment_status", "unpaid")
+          .eq("expires_at", r.expires_at);
         throw error;
       }
     }
@@ -494,59 +629,6 @@ async function handle(req: NextRequest, ctx: Context) {
             "This registration belongs to another user.",
           );
       } else await organizer(p, t.id);
-      let update: Record<string, unknown> = {};
-      if (v.action === "withdraw") {
-        if (new Date(t.starts_at).getTime() <= Date.now())
-          throw new HttpError(
-            400,
-            "The event has started. Contact the organizer.",
-          );
-        if (
-          !["approved", "pending", "pending_payment", "waitlisted"].includes(
-            r.status,
-          )
-        )
-          throw new HttpError(400, "This entry cannot be withdrawn.");
-        update = {
-          status: "withdrawn",
-          ...(r.payment_status === "paid"
-            ? { payment_status: "refund_requested" }
-            : {}),
-        };
-      }
-      if (v.action === "checkin") {
-        const delta = new Date(t.starts_at).getTime() - Date.now();
-        if (r.status !== "approved" || delta > 1800000 || delta < 0)
-          throw new HttpError(
-            400,
-            "Check-in opens 30 minutes before the event for approved entries.",
-          );
-        update = {
-          status: "checked_in",
-          checked_in_at: new Date().toISOString(),
-        };
-      }
-      if (v.action === "approve") {
-        if (
-          r.status !== "pending" ||
-          !["paid", "free"].includes(r.payment_status)
-        )
-          throw new HttpError(
-            400,
-            "Only pending, paid or free entries can be approved.",
-          );
-        update = { status: "approved" };
-      }
-      if (v.action === "reject") {
-        if (!["pending", "approved"].includes(r.status))
-          throw new HttpError(400, "This entry cannot be rejected.");
-        update = {
-          status: "rejected",
-          ...(r.payment_status === "paid"
-            ? { payment_status: "refund_requested" }
-            : {}),
-        };
-      }
       if (v.action === "refund") {
         if (
           !r.payment_id ||
@@ -557,38 +639,16 @@ async function handle(req: NextRequest, ctx: Context) {
             400,
             "Withdraw or reject a paid entry before refunding.",
           );
-        const existing = await razor("payments/" + r.payment_id + "/refunds");
-        if (
-          existing.items?.some(
-            (x: { status: string; amount: number }) =>
-              x.amount === r.amount_paise && x.status !== "failed",
-          )
-        )
-          throw new HttpError(409, "A refund already exists for this payment.");
-        await razor("payments/" + r.payment_id + "/refund", "POST", {
-          amount: r.amount_paise,
-          notes: { registration_id: r.id },
-        });
-        update = { payment_status: "refund_requested" };
+        await requestRefund(p, r.order_id);
+        return NextResponse.json({ ok: true });
       }
-      const updated =
-        v.action === "refund"
-          ? checked(
-              await db()
-                .from("registrations")
-                .update(update)
-                .eq("id", r.id)
-                .select()
-                .single(),
-            )
-          : checked(
-              await db().rpc("transition_registration", {
-                p_id: r.id,
-                p_actor: p.id,
-                p_action: v.action,
-              }),
-            );
-      if (v.action === "refund") await audit(p, "registration.refund", r.id);
+      const updated = checked(
+        await db().rpc("transition_registration", {
+          p_id: r.id,
+          p_actor: p.id,
+          p_action: v.action,
+        }),
+      );
       return NextResponse.json(updated);
     }
     if (path === "payments/refund" && method === "POST") {
@@ -606,19 +666,7 @@ async function handle(req: NextRequest, ctx: Context) {
       await organizer(p, o.tournament_id);
       if (o.payment_status !== "refund_requested" || !o.payment_id)
         throw new HttpError(400, "This payment is not awaiting a refund.");
-      const existing = await razor("payments/" + o.payment_id + "/refunds");
-      if (
-        existing.items?.some(
-          (x: { status: string; amount: number }) =>
-            x.amount === o.amount_paise && x.status !== "failed",
-        )
-      )
-        throw new HttpError(409, "A refund is already in progress.");
-      await razor("payments/" + o.payment_id + "/refund", "POST", {
-        amount: o.amount_paise,
-        notes: { order_id: o.order_id },
-      });
-      await audit(p, "payment.refund_requested", o.order_id);
+      await requestRefund(p, o.order_id);
       return NextResponse.json({ ok: true });
     }
     if (path === "saved" && method === "POST") {
@@ -673,63 +721,29 @@ async function handle(req: NextRequest, ctx: Context) {
       const id = body.id ? uuid.parse(body.id) : undefined;
       await organizer(p, id);
       const v = tournamentSchema.parse(body);
-      if (id) {
-        const current = checked(
-          await db()
-            .from("tournaments")
-            .select("fee_paise,capacity")
-            .eq("id", id)
-            .single(),
-        );
-        const entries = checked(
-          await db()
-            .from("registrations")
-            .select("id")
-            .eq("tournament_id", id)
-            .in("status", [
-              "approved",
-              "pending",
-              "checked_in",
-              "pending_payment",
-            ]),
-        );
-        if (entries?.length && current?.fee_paise !== v.fee_paise)
-          throw new HttpError(
-            400,
-            "Entry fee cannot change after registrations begin.",
-          );
-        if (v.capacity < (entries?.length || 0))
-          throw new HttpError(
-            400,
-            "Capacity cannot be below the active registration count.",
-          );
-      }
-      const result = id
-        ? checked(
-            await db()
-              .from("tournaments")
-              .update(v)
-              .eq("id", id)
-              .select()
-              .single(),
-          )
-        : checked(
-            await db()
-              .from("tournaments")
-              .insert({
-                ...v,
-                organizer_id: p.id,
-                organizer_name: p.display_name,
-              })
-              .select()
-              .single(),
-          );
-      await audit(
-        p,
-        id ? "tournament.updated" : "tournament.created",
-        result.id,
+      const result = checked(
+        await db().rpc("save_tournament", {
+          p_actor: p.id,
+          p_id: id || null,
+          p_values: v,
+          p_version: body.updated_at
+            ? z.string().datetime({ offset: true }).parse(body.updated_at)
+            : null,
+        }),
       );
       return NextResponse.json(result);
+    }
+    if (path === "tournaments/cancel" && method === "POST") {
+      const id = uuid.parse(body.id);
+      await organizer(p, id);
+      checked(
+        await db().rpc("cancel_tournament", {
+          p_actor: p.id,
+          p_id: id,
+          p_reason: z.string().trim().min(5).max(500).parse(body.reason),
+        }),
+      );
+      return NextResponse.json({ ok: true });
     }
     if (path === "standings/import" && method === "POST") {
       const id = uuid.parse(body.tournament_id);
@@ -745,17 +759,22 @@ async function handle(req: NextRequest, ctx: Context) {
             tiebreak: z.number().min(0),
           }),
         )
+        .min(1)
         .max(10000)
         .parse(body.rows);
+      const identities = rows.map((r) => r.username.toLowerCase());
+      if (new Set(identities).size !== identities.length)
+        throw new HttpError(
+          400,
+          "Each player may appear only once in a standings import.",
+        );
       checked(
-        await db()
-          .from("standings")
-          .upsert(
-            rows.map((r) => ({ ...r, tournament_id: id })),
-            { onConflict: "tournament_id,username" },
-          ),
+        await db().rpc("import_standings", {
+          p_actor: p.id,
+          p_tournament: id,
+          p_rows: rows,
+        }),
       );
-      await audit(p, "standings.imported", id, { rows: rows.length });
       return NextResponse.json({ count: rows.length });
     }
     if (path === "posts" && method === "POST") {
@@ -870,22 +889,22 @@ async function handle(req: NextRequest, ctx: Context) {
       administrator(p);
       const id = uuid.parse(body.id);
       const action = z
-        .enum(["hide", "lock", "delete_comment", "resolve_report"])
+        .enum([
+          "hide",
+          "restore",
+          "lock",
+          "unlock",
+          "delete_comment",
+          "resolve_report",
+        ])
         .parse(body.action);
-      if (action === "hide")
-        checked(await db().from("posts").update({ hidden: true }).eq("id", id));
-      if (action === "lock")
-        checked(await db().from("posts").update({ locked: true }).eq("id", id));
-      if (action === "delete_comment")
-        checked(await db().from("comments").delete().eq("id", id));
-      if (action === "resolve_report")
-        checked(
-          await db()
-            .from("reports")
-            .update({ status: "resolved" })
-            .eq("id", id),
-        );
-      await audit(p, "community." + action, id);
+      checked(
+        await db().rpc("moderate_content", {
+          p_actor: p.id,
+          p_id: id,
+          p_action: action,
+        }),
+      );
       return NextResponse.json({ ok: true });
     }
     if (path === "admin/role" && method === "POST") {
@@ -894,8 +913,32 @@ async function handle(req: NextRequest, ctx: Context) {
       if (id === p.id)
         throw new HttpError(400, "You cannot change your own role.");
       const role = z.enum(["USER", "ORGANIZER", "ADMIN"]).parse(body.role);
-      checked(await db().from("profiles").update({ role }).eq("id", id));
-      await audit(p, "user.role_changed", id, { role });
+      checked(
+        await db().rpc("manage_account", {
+          p_actor: p.id,
+          p_target: id,
+          p_role: role,
+          p_status: null,
+          p_reason: "",
+        }),
+      );
+      return NextResponse.json({ ok: true });
+    }
+    if (path === "admin/account" && method === "POST") {
+      administrator(p);
+      checked(
+        await db().rpc("manage_account", {
+          p_actor: p.id,
+          p_target: uuid.parse(body.id),
+          p_role: null,
+          p_status: z.enum(["active", "suspended"]).parse(body.status),
+          p_reason: z
+            .string()
+            .trim()
+            .max(500)
+            .parse(body.reason || ""),
+        }),
+      );
       return NextResponse.json({ ok: true });
     }
     if (path === "admin/settings" && method === "POST") {
@@ -904,10 +947,16 @@ async function handle(req: NextRequest, ctx: Context) {
         .object({
           support_email: z.string().email(),
           community_enabled: z.boolean(),
+          registrations_enabled: z.boolean(),
+          announcement: z.string().trim().max(500),
+          operator_name: z.string().trim().min(2).max(160),
+          jurisdiction: z.string().trim().min(2).max(160),
+          retention_days: z.number().int().min(30).max(3650),
         })
         .parse(body);
-      checked(await db().from("site_settings").update(v).eq("id", true));
-      await audit(p, "settings.updated", "site");
+      checked(
+        await db().rpc("save_site_settings", { p_actor: p.id, p_values: v }),
+      );
       return NextResponse.json({ ok: true });
     }
     throw new HttpError(404, "Endpoint not found.");
@@ -924,7 +973,30 @@ async function handle(req: NextRequest, ctx: Context) {
         : error instanceof z.ZodError
           ? error.issues[0]?.message
           : "Something went wrong. Please try again.";
-    return NextResponse.json({ error: message }, { status });
+    const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
+    if (status >= 500)
+      console.error(
+        JSON.stringify({
+          event: "api.error",
+          request_id: requestId,
+          path: req.nextUrl.pathname,
+          status,
+        }),
+      );
+    return NextResponse.json(
+      {
+        error: message,
+        code: error instanceof HttpError ? error.code : undefined,
+        request_id: requestId,
+      },
+      {
+        status,
+        headers: {
+          "Cache-Control": "private, no-store",
+          ...(status === 429 ? { "Retry-After": "60" } : {}),
+        },
+      },
+    );
   }
 }
 export const GET = handle;

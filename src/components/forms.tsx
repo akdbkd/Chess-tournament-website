@@ -132,11 +132,14 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
               name="password"
               type="password"
               required
-              minLength={8}
+              minLength={mode === "signup" ? 12 : undefined}
+              maxLength={128}
               autoComplete={
                 mode === "signup" ? "new-password" : "current-password"
               }
-              placeholder="At least 8 characters"
+              placeholder={
+                mode === "signup" ? "At least 12 characters" : "Your password"
+              }
             />
           </label>
         )}
@@ -652,7 +655,7 @@ export function ResetPassword() {
           <input
             name="password"
             type="password"
-            minLength={8}
+            minLength={12}
             required
             autoComplete="new-password"
           />

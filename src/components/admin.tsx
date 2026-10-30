@@ -2,19 +2,13 @@
 import { useEffect, useState } from "react";
 import {
   Plus,
-  Download,
   Upload,
   ArrowUpRight,
   ShieldCheck,
   Trophy,
   Users,
   Wallet,
-  Check,
-  X,
   Pencil,
-  Settings,
-  Activity,
-  MessageSquare,
   Loader2,
 } from "lucide-react";
 import { useApp } from "./provider";
@@ -23,8 +17,13 @@ import { api } from "@/lib/supabase";
 import type { Tournament, Registration, Profile } from "@/lib/types";
 import { date, money } from "@/lib/data";
 import { tournamentSchema } from "@/lib/validation";
-import { downloadCsv, standingsCsv } from "@/lib/csv";
+import { standingsCsv } from "@/lib/csv";
 type AdminData = {
+  summary?: {
+    tournaments: number;
+    registrations: number;
+    collected_paise: number;
+  };
   tournaments: Tournament[];
   registrations: Registration[];
   profiles: Profile[];
@@ -38,6 +37,9 @@ type AdminData = {
     created_at: string;
   }[];
 };
+import { AccountSecurity } from "./account-security";
+import { AdminCollection } from "./admin-collection";
+import { PlatformSettings } from "./platform-settings";
 export function Admin() {
   const app = useApp();
   const [data, setData] = useState<AdminData>({
@@ -49,6 +51,9 @@ export function Admin() {
       refunds: [],
     }),
     [tab, setTab] = useState("Overview"),
+    [revision, setRevision] = useState(0),
+    [cancelling, setCancelling] = useState<string | null>(null),
+    [cancelReason, setCancelReason] = useState(""),
     [editing, setEditing] = useState<Tournament | "new" | null>(null),
     [importId, setImportId] = useState(""),
     [importText, setImportText] = useState(""),
@@ -71,13 +76,17 @@ export function Admin() {
     }
     try {
       setData(await api("admin"));
+      setRevision((n) => n + 1);
       setError("");
     } catch (e) {
       setError((e as Error).message);
     }
   }
   useEffect(() => {
-    if (app.profile && (app.demo || app.profile.role !== "USER"))
+    if (
+      app.profile &&
+      (app.demo || (app.profile.role !== "USER" && app.profile.aal === "aal2"))
+    )
       void refresh();
   }, [app.profile, app.tournaments, app.registrations]);
   if (!app.profile || app.profile.role === "USER")
@@ -117,6 +126,14 @@ export function Admin() {
         />
       </div>
     );
+  if (!app.demo && app.profile.aal !== "aal2")
+    return (
+      <div className="page narrow-page">
+        <div className="eyebrow">PROTECT YOUR ARENA</div>
+        <h1>Verify your authenticator</h1>
+        <AccountSecurity />
+      </div>
+    );
   async function command(id: string, action: string) {
     setBusy(true);
     try {
@@ -151,13 +168,12 @@ export function Admin() {
           "Tournaments",
           "Registrations",
           "Refunds",
-          "Players",
           "Community",
           "Users",
           "Settings",
           "Audit log",
         ]
-      : ["Overview", "Tournaments", "Registrations", "Refunds", "Players"];
+      : ["Overview", "Tournaments", "Registrations", "Refunds"];
   return (
     <div className="page">
       <div className="page-intro">
@@ -203,27 +219,28 @@ export function Admin() {
                 {[
                   {
                     icon: Trophy,
-                    n: data.tournaments.length,
+                    n: data.summary?.tournaments ?? data.tournaments.length,
                     label: "Your tournaments",
                   },
                   {
                     icon: Users,
-                    n: data.registrations.length,
+                    n: data.summary?.registrations ?? data.registrations.length,
                     label: "Player registrations",
                   },
                   {
                     icon: Wallet,
                     n: money(
-                      data.registrations
-                        .filter((r) => r.payment_status === "paid")
-                        .reduce(
-                          (n, r) =>
-                            n +
-                            (data.tournaments.find(
-                              (t) => t.id === r.tournament_id,
-                            )?.fee_paise || 0),
-                          0,
-                        ),
+                      data.summary?.collected_paise ??
+                        data.registrations
+                          .filter((r) => r.payment_status === "paid")
+                          .reduce(
+                            (n, r) =>
+                              n +
+                              (data.tournaments.find(
+                                (t) => t.id === r.tournament_id,
+                              )?.fee_paise || 0),
+                            0,
+                          ),
                     ),
                     label: app.demo
                       ? "Demo collections"
@@ -239,7 +256,7 @@ export function Admin() {
               </div>
               <div className="panel">
                 <div className="section-title">
-                  <h2>Event readiness</h2>
+                  <h2>Recent event readiness</h2>
                   <span className="muted small-text">
                     Before the first move
                   </span>
@@ -282,541 +299,51 @@ export function Admin() {
             </>
           )}
           {tab === "Tournaments" && (
-            <div className="panel">
-              <div className="section-title">
-                <h2>Manage tournaments</h2>
-                <button
-                  className="text-button"
-                  onClick={() => setEditing("new")}
-                >
-                  <Plus size={15} />
-                  New event
-                </button>
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tournament</th>
-                      <th>Status</th>
-                      <th>Entries</th>
-                      <th>Entry fee</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.tournaments.map((t) => (
-                      <tr key={t.id}>
-                        <td>
-                          <strong>{t.title}</strong>
-                          <small>{date(t.starts_at)}</small>
-                        </td>
-                        <td>
-                          <Badge color={t.status === "open" ? "green" : ""}>
-                            {t.status}
-                          </Badge>
-                        </td>
-                        <td>
-                          {t.participants}/{t.capacity}
-                        </td>
-                        <td>{t.fee_paise ? money(t.fee_paise) : "Free"}</td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              className="icon-button"
-                              title="Edit tournament"
-                              onClick={() => setEditing(t)}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              className="icon-button"
-                              title="Import standings"
-                              onClick={() => setImportId(t.id)}
-                            >
-                              <Upload size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <>
+              <button
+                className="button small"
+                onClick={() => setEditing("new")}
+              >
+                <Plus size={16} /> New event
+              </button>
+              <AdminCollection
+                resource="tournaments"
+                revision={revision}
+                onEdit={setEditing}
+                onImport={setImportId}
+                onCancel={(id) => {
+                  setCancelReason("");
+                  setCancelling(id);
+                }}
+              />
+            </>
           )}
           {tab === "Registrations" && (
-            <div className="panel">
-              <div className="section-title">
-                <h2>Player registrations</h2>
-                <button
-                  className="button secondary small"
-                  onClick={() =>
-                    downloadCsv(
-                      "registrations.csv",
-                      [
-                        "Tournament",
-                        "Player",
-                        "Rating",
-                        "Status",
-                        "Payment",
-                        "Submitted at",
-                      ],
-                      data.registrations.map((r) => [
-                        data.tournaments.find((t) => t.id === r.tournament_id)
-                          ?.title,
-                        r.username,
-                        r.rating,
-                        r.status,
-                        r.payment_status,
-                        r.created_at,
-                      ]),
-                    )
-                  }
-                >
-                  <Download size={15} />
-                  Export CSV
-                </button>
-              </div>
-              {data.registrations.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Player / tournament</th>
-                        <th>Status</th>
-                        <th>Payment</th>
-                        <th>Manage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.registrations.map((r) => (
-                        <tr key={r.id}>
-                          <td>
-                            <strong>{r.username}</strong>
-                            <small>
-                              {
-                                data.tournaments.find(
-                                  (t) => t.id === r.tournament_id,
-                                )?.title
-                              }
-                            </small>
-                          </td>
-                          <td>
-                            <Badge>{r.status.replaceAll("_", " ")}</Badge>
-                          </td>
-                          <td>{r.payment_status.replaceAll("_", " ")}</td>
-                          <td>
-                            <div className="table-actions">
-                              {r.status === "pending" && (
-                                <button
-                                  className="text-button"
-                                  onClick={() =>
-                                    setConfirm({ id: r.id, action: "approve" })
-                                  }
-                                >
-                                  Approve
-                                </button>
-                              )}
-                              {["pending", "approved"].includes(r.status) && (
-                                <button
-                                  className="text-button danger"
-                                  onClick={() =>
-                                    setConfirm({ id: r.id, action: "reject" })
-                                  }
-                                >
-                                  Reject
-                                </button>
-                              )}
-                              {r.payment_status === "refund_requested" && (
-                                <button
-                                  className="text-button"
-                                  onClick={() =>
-                                    setConfirm({ id: r.id, action: "refund" })
-                                  }
-                                >
-                                  Issue refund
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty
-                  title="Ready for your first entries"
-                  description="Player registrations will appear here as they arrive."
-                />
-              )}
-            </div>
+            <AdminCollection
+              resource="registrations"
+              revision={revision}
+              onCommand={(id, action) => setConfirm({ id, action })}
+            />
           )}
           {tab === "Refunds" && (
-            <div className="panel">
-              <h2>Payment refund queue</h2>
-              <p className="muted">
-                Withdrawals, rejected entries, and payments captured after a
-                reservation expired. A payment stays here until Razorpay
-                confirms its refund.
-              </p>
-              {data.refunds.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Payment / event</th>
-                        <th>Amount</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.refunds.map((o) => (
-                        <tr key={o.order_id}>
-                          <td>
-                            <strong>{o.payment_id}</strong>
-                            <small>
-                              {
-                                data.tournaments.find(
-                                  (t) => t.id === o.tournament_id,
-                                )?.title
-                              }
-                            </small>
-                          </td>
-                          <td>{money(o.amount_paise)}</td>
-                          <td>
-                            <button
-                              className="text-button"
-                              onClick={() =>
-                                setConfirm({
-                                  id: o.order_id,
-                                  action: "payment_refund",
-                                })
-                              }
-                            >
-                              Issue full refund
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty
-                  title="No payments awaiting a refund"
-                  description="Refund requests and late captured payments will appear here."
-                />
-              )}
-            </div>
-          )}
-          {tab === "Players" && (
-            <div className="panel">
-              <h2>Your player field</h2>
-              <p className="muted">
-                Public Chess.com profiles, independent of website accounts.
-              </p>
-              {data.registrations.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Chess.com player</th>
-                        <th>Rating at registration</th>
-                        <th>Profile</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from(
-                        new Map(
-                          data.registrations.map((r) => [
-                            r.username.toLowerCase(),
-                            r,
-                          ]),
-                        ).values(),
-                      ).map((r) => (
-                        <tr key={r.username}>
-                          <td>{r.username}</td>
-                          <td>{r.rating ?? "Unrated"}</td>
-                          <td>
-                            <a
-                              className="text-link"
-                              href={
-                                "https://www.chess.com/member/" +
-                                encodeURIComponent(r.username)
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              View profile
-                              <ArrowUpRight size={14} />
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty
-                  title="No players yet"
-                  description="Registered Chess.com players will appear here."
-                />
-              )}
-            </div>
+            <AdminCollection
+              resource="refunds"
+              revision={revision}
+              onCommand={(id, action) => setConfirm({ id, action })}
+            />
           )}
           {tab === "Community" && (
-            <div className="panel">
-              <h2>Community moderation</h2>
-              <p className="muted">
-                Review reported content, hide posts, or lock discussions.
-              </p>
-              {data.reports.map((r) => (
-                <div className="info-panel" key={r.id}>
-                  <div>
-                    <strong>Report: {r.reason}</strong>
-                    <p>Post ID: {r.post_id}</p>
-                    <button
-                      className="text-button"
-                      onClick={async () => {
-                        try {
-                          await api("admin/moderate", {
-                            method: "POST",
-                            body: JSON.stringify({
-                              id: r.id,
-                              action: "resolve_report",
-                            }),
-                          });
-                          await refresh();
-                          app.notify("Report resolved.");
-                        } catch (e) {
-                          app.notify((e as Error).message, true);
-                        }
-                      }}
-                    >
-                      Resolve report
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {app.posts.map((post) => (
-                <div className="readiness-row" key={post.id}>
-                  <div>
-                    <strong>{post.title}</strong>
-                    <p>
-                      {post.author_name} ·{" "}
-                      {post.locked ? "Locked" : post.category}
-                    </p>
-                  </div>
-                  <button
-                    className="text-button"
-                    onClick={async () => {
-                      try {
-                        if (app.demo)
-                          app.update({
-                            posts: app.posts.map((p) =>
-                              p.id === post.id ? { ...p, locked: true } : p,
-                            ),
-                          });
-                        else {
-                          await api("admin/moderate", {
-                            method: "POST",
-                            body: JSON.stringify({
-                              id: post.id,
-                              action: "lock",
-                            }),
-                          });
-                          await app.refresh();
-                        }
-                        app.notify("Discussion locked.");
-                      } catch (e) {
-                        app.notify((e as Error).message, true);
-                      }
-                    }}
-                  >
-                    Lock
-                  </button>
-                  <button
-                    className="text-button danger"
-                    onClick={async () => {
-                      try {
-                        if (app.demo)
-                          app.update({
-                            posts: app.posts.filter((p) => p.id !== post.id),
-                          });
-                        else {
-                          await api("admin/moderate", {
-                            method: "POST",
-                            body: JSON.stringify({
-                              id: post.id,
-                              action: "hide",
-                            }),
-                          });
-                          await app.refresh();
-                        }
-                        app.notify("Post hidden.");
-                      } catch (e) {
-                        app.notify((e as Error).message, true);
-                      }
-                    }}
-                  >
-                    Hide
-                  </button>
-                </div>
-              ))}
-            </div>
+            <>
+              <AdminCollection resource="reports" revision={revision} />
+              <AdminCollection resource="posts" revision={revision} />
+            </>
           )}
           {tab === "Users" && (
-            <div className="panel">
-              <h2>People & permissions</h2>
-              <p className="muted">
-                Organizer access applies only to the tournaments they own.
-              </p>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Website user</th>
-                      <th>Role</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.profiles.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          {p.display_name}
-                          <small>
-                            {p.id === app.profile?.id ? "You" : p.id}
-                          </small>
-                        </td>
-                        <td>
-                          <select
-                            aria-label={"Role for " + p.display_name}
-                            value={p.role}
-                            disabled={p.id === app.profile?.id}
-                            onChange={async (e) => {
-                              try {
-                                await api("admin/role", {
-                                  method: "POST",
-                                  body: JSON.stringify({
-                                    id: p.id,
-                                    role: e.target.value,
-                                  }),
-                                });
-                                await refresh();
-                                app.notify("Role updated.");
-                              } catch (e) {
-                                app.notify((e as Error).message, true);
-                              }
-                            }}
-                          >
-                            {["USER", "ORGANIZER", "ADMIN"].map((role) => (
-                              <option key={role}>{role}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AdminCollection resource="users" revision={revision} />
           )}
-          {tab === "Settings" && (
-            <div className="panel">
-              <h2>Platform settings</h2>
-              <p className="muted">
-                Payment credentials are managed securely in your hosting
-                environment.
-              </p>
-              <form
-                className="stack-form"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const f = new FormData(e.currentTarget);
-                  try {
-                    if (!app.demo)
-                      await api("admin/settings", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          support_email: f.get("email"),
-                          community_enabled: f.get("community") === "on",
-                        }),
-                      });
-                    app.notify(
-                      app.demo
-                        ? "Demo settings reviewed. Live settings require Supabase."
-                        : "Settings saved.",
-                    );
-                  } catch (e) {
-                    app.notify((e as Error).message, true);
-                  }
-                }}
-              >
-                <label>
-                  Support email
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="Your organizer support email"
-                  />
-                </label>
-                <label className="checkbox-label">
-                  <input name="community" type="checkbox" defaultChecked />
-                  <span>Allow community posts</span>
-                </label>
-                <button className="button">Save settings</button>
-              </form>
-              <div className="divider" />
-              <div className="integration-status">
-                <strong>Supabase</strong>
-                <Badge color={app.demo ? "amber" : "green"}>
-                  {app.demo ? "Setup required" : "Configured"}
-                </Badge>
-              </div>
-              <div className="integration-status">
-                <strong>Razorpay</strong>
-                <span>Server-side orders, verification & webhooks</span>
-              </div>
-              <div className="integration-status">
-                <strong>Vercel</strong>
-                <span>Deploy-ready Next.js application</span>
-              </div>
-            </div>
-          )}
+          {tab === "Settings" && <PlatformSettings />}
           {tab === "Audit log" && (
-            <div className="panel">
-              <h2>Audit trail</h2>
-              {data.logs.length ? (
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Action</th>
-                        <th>Entity</th>
-                        <th>Time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.logs.map((l) => (
-                        <tr key={l.id}>
-                          <td>{l.action}</td>
-                          <td>{l.entity_id}</td>
-                          <td>{date(l.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty
-                  title="A clear record of every change"
-                  description="Administrative actions are recorded in Supabase in live mode."
-                />
-              )}
-            </div>
+            <AdminCollection resource="logs" revision={revision} />
           )}
         </div>
       </div>
@@ -847,7 +374,8 @@ export function Admin() {
         >
           <p className="muted">
             Paste CSV exported from your reviewed results. Existing player rows
-            are updated.
+            are updated. For live events, close registration first; results must
+            belong to approved players.
           </p>
           <label className="stack-form">
             CSV data
@@ -894,6 +422,86 @@ export function Admin() {
             >
               <Upload size={16} />
               Import standings
+            </button>
+          </div>
+        </Modal>
+      )}
+      {cancelling && (
+        <Modal
+          title="Cancel this tournament?"
+          onClose={() => !busy && setCancelling(null)}
+        >
+          <p>
+            All active entries will be withdrawn. Paid entries move to the
+            refund queue, and registered users receive a notification. The event
+            cannot reopen.
+          </p>
+          <label>
+            Reason for players
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              minLength={5}
+              maxLength={500}
+              required
+            />
+          </label>
+          <div className="modal-actions">
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => setCancelling(null)}
+            >
+              Keep event
+            </button>
+            <button
+              className="button danger-button"
+              disabled={busy || cancelReason.trim().length < 5}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  if (app.demo)
+                    app.update({
+                      tournaments: app.tournaments.map((t) =>
+                        t.id === cancelling
+                          ? { ...t, status: "cancelled", participants: 0 }
+                          : t,
+                      ),
+                      registrations: app.registrations.map((r) =>
+                        r.tournament_id === cancelling
+                          ? {
+                              ...r,
+                              status: "withdrawn",
+                              payment_status:
+                                r.payment_status === "paid"
+                                  ? "refund_requested"
+                                  : r.payment_status,
+                            }
+                          : r,
+                      ),
+                    });
+                  else
+                    await api("tournaments/cancel", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        id: cancelling,
+                        reason: cancelReason,
+                      }),
+                    });
+                  await refresh();
+                  await app.refresh();
+                  setCancelling(null);
+                  app.notify(
+                    "Tournament cancelled. Paid entries are queued for refund.",
+                  );
+                } catch (e) {
+                  app.notify((e as Error).message, true);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Cancel tournament
             </button>
           </div>
         </Modal>
@@ -1001,7 +609,10 @@ function TournamentEditor({
         onSave(
           await api("tournaments/save", {
             method: "POST",
-            body: JSON.stringify({ ...v, ...(value ? { id: value.id } : {}) }),
+            body: JSON.stringify({
+              ...v,
+              ...(value ? { id: value.id, updated_at: value.updated_at } : {}),
+            }),
           }),
         );
     } catch (e) {
