@@ -21,7 +21,9 @@ const base = process.env.TEST_BASE_URL || "http://localhost:3000";
     return Array.prototype.push.call(this, s);
   };
   await page.goto(base + "", { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Welcome to the arena." }).waitFor();
+  await page
+    .getByRole("heading", { name: /A higher.*level of chess/i })
+    .waitFor();
   await page.screenshot({ path: "work/home-desktop.png", fullPage: true });
   checks.push("Desktop home renders");
   await page.getByRole("button", { name: "Join the arena" }).click();

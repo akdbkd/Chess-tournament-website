@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Provider } from "@/components/provider";
 import { Chrome } from "@/components/chrome";
 import "./globals.css";
+import "./premium.css";
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",

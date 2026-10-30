@@ -1,6 +1,8 @@
 # Verification record
 
-Verified 30 October 2026.
+Verified 31 October 2026.
+
+The cinematic visual redesign was checked in the production build, at 320, 390, 768, 1024, and 1440 pixel widths, and through the existing registration/community/organizer browser walkthrough.
 
 | Check | Result |
 |---|---|

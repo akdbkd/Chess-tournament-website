@@ -7,7 +7,8 @@ import {
   Trophy,
   Users,
   BarChart3,
-  Compass,
+  Crown,
+  Radio,
   Bookmark,
   CalendarDays,
   ArrowUpRight,
@@ -27,6 +28,7 @@ import { AuthModal } from "./forms";
 const nav = [
   { name: "Overview", href: "/", icon: LayoutGrid },
   { name: "Tournaments", href: "/tournaments", icon: Trophy },
+  { name: "Live events", href: "/tournaments?status=live", icon: Radio },
   { name: "Leaderboard", href: "/leaderboard", icon: BarChart3 },
   { name: "Community", href: "/community", icon: Users },
 ];
@@ -109,12 +111,12 @@ export function Chrome({ children }: { children: React.ReactNode }) {
         <div className="sidebar-bottom">
           <div className="club-card">
             <div className="club-symbol">
-              <Compass size={26} />
+              <Crown size={35} />
             </div>
-            <h3>Built for your next level.</h3>
-            <p>A better arena for every kind of chess player.</p>
+            <h3>Built for every chess player.</h3>
+            <p>Compete. Learn. Connect. Grow.</p>
             <Link href="/about">
-              Meet Knightfall
+              Discover Knightfall
               <ArrowUpRight size={16} />
             </Link>
           </div>

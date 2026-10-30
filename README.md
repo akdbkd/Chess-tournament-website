@@ -4,6 +4,10 @@ A complete chess-event application built with **Next.js App Router, TypeScript, 
 
 [Desktop preview](docs/desktop-preview.png) · [Mobile preview](docs/mobile-preview.png) · [Verification record](VALIDATION.md)
 
+## Visual design
+
+Luminous gold controls, midnight-blue surfaces, high-contrast typography, a cinematic knight hero, image-led tournament cards, an upcoming-event spotlight, reviewed circuit standings, and a responsive four-step onboarding section. The same palette carries through checkout, player dashboards, community, and the organizer studio. Home-page figures remain sourced from the application data and demo figures are labeled.
+
 ## Run the included demo
 
 Requires Node.js 22 or newer and npm.
@@ -19,7 +23,7 @@ Demo activity is stored in browser localStorage. Sample events, player counts, p
 
 ## What's included
 
-- Responsive dark esports design, original vector artwork, keyboard focus states, accessible dialogs, mobile navigation, loading/error/empty states.
+- Responsive black-and-gold esports design, cinematic chess artwork, keyboard focus states, accessible dialogs, mobile navigation, loading/error/empty states.
 - Eight realistic sample tournaments; URL-persisted search, category/status/format/fee/rating/date filters, sorting and pagination.
 - Tournament overview, public participants, rules, match-day schedule, organizer-imported standings and event-specific discussions.
 - Website users separate from Chess.com players. Any authenticated user can submit an eligible player's entry with their permission.
@@ -162,4 +166,4 @@ Implemented notifications cover registration, payment and status changes. Time-b
 
 ## Assets
 
-Knight artwork and decorative graphics are original SVG/CSS included in the source. DM Sans and Barlow Condensed are self-hosted under the SIL Open Font License; license files are in `public/fonts/`.
+Cinematic chess artwork was generated for this project and is included as optimized WebP assets in `public/art/`. The brand mark and decorative interface elements use SVG/CSS. DM Sans, Barlow Condensed, and Cormorant Garamond are self-hosted under the SIL Open Font License; license files are in `public/fonts/`.

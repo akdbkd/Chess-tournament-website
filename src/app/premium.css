@@ -1,0 +1,2994 @@
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/cormorant-0.ttf) format("truetype");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/cormorant-1.ttf) format("truetype");
+}
+
+/* Knightfall — luminous gold, midnight blue, and cinematic chess imagery. */
+:root {
+  --bg: #060d14;
+  --surface: #101a25;
+  --surface2: #152230;
+  --border: #2a3a4a;
+  --text: #f4f7fc;
+  --muted: #b1bfce;
+  --orange: #f6c66f;
+  --green: #76d6a1;
+  --eye: #07111a;
+  --gold: #f6c66f;
+  --gold-soft: #ffe0a3;
+}
+body {
+  background:
+    radial-gradient(ellipse at 70% 0, #26303b30, transparent 50%), var(--bg);
+  color: var(--text);
+}
+p {
+  color: var(--muted);
+}
+.orange-text {
+  color: var(--gold);
+}
+.button {
+  background: linear-gradient(110deg, #ffdc8c, #f1b955);
+  border: 1px solid #ffdc8d;
+  color: #10151c;
+  box-shadow: 0 3px 18px #eab45612;
+  font-weight: 700;
+  border-radius: 6px;
+}
+.button:hover:not(:disabled) {
+  background: linear-gradient(110deg, #ffe8b4, #ffd07a);
+  border-color: #ffe4a5;
+  box-shadow: 0 5px 22px #eab45625;
+}
+.button.secondary {
+  background: linear-gradient(135deg, #182634, #111d28);
+  border-color: #455768;
+  color: #edf3fb;
+  box-shadow: none;
+}
+.button.secondary:hover:not(:disabled) {
+  background: #223446;
+  border-color: #71889e;
+}
+.icon-button {
+  color: #c1cbd8;
+}
+.text-link,
+.text-button,
+.quiet-link {
+  color: #e2c898;
+}
+.text-link:hover,
+.text-button:hover,
+.quiet-link:hover {
+  color: #ffe4ac;
+}
+input,
+textarea,
+select {
+  background: #0b1520;
+  border-color: #3a4b5d;
+  color: #f4f7fc;
+  font-size: 13px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #8fa2b6;
+}
+input:disabled {
+  background: #1b2937;
+  color: #b0bfce;
+}
+small,
+.muted {
+  color: var(--muted);
+}
+.eyebrow {
+  color: #bac5d4;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.badge {
+  color: #dce5ef;
+  background: #1c2c3bcc;
+  border-color: #5f758a40;
+  font-size: 10px;
+}
+.badge.green {
+  background: #188956dd;
+  border-color: #54d28c50;
+  color: #f0fff8;
+}
+.badge.orange,
+.badge.amber {
+  background: #62462055;
+  border-color: #f0bb6655;
+  color: #ffe1a4;
+}
+.badge.red {
+  color: #fff;
+  background: #dc3030dc;
+  border-color: #ff727260;
+}
+.status-dot.green {
+  background: #64d896;
+  box-shadow: 0 0 10px #60e79b35;
+}
+.sidebar {
+  width: 220px;
+  background: #080f16;
+  border-right-color: #293744;
+  padding: 28px 16px 15px;
+  isolation: isolate;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.sidebar:before {
+  content: "";
+  position: absolute;
+  inset: 45% 0 0;
+  background:
+    linear-gradient(#080f16 5%, #080f167a 55%, #080f16cc),
+    url("/art/golden-king.webp") center bottom/auto 100% no-repeat;
+  opacity: 0.25;
+  z-index: -1;
+  pointer-events: none;
+}
+.app-shell {
+  margin-left: 220px;
+}
+.brand {
+  font-size: 18px;
+  letter-spacing: 0.8px;
+  margin-bottom: 42px;
+  color: #f7f8ff;
+  gap: 8px;
+}
+.brand-icon {
+  color: #ffd079;
+  filter: drop-shadow(0 0 11px #f5b84f55);
+  width: 32px;
+  height: 39px;
+}
+.brand small {
+  color: #bdcadb;
+  letter-spacing: 2px;
+  font-size: 8px;
+}
+.sidebar-label {
+  color: #98aabd;
+  font-size: 9px;
+  letter-spacing: 1.7px;
+  margin-bottom: 12px;
+}
+.sidebar-label.second {
+  margin-top: 26px;
+}
+.nav-link {
+  font-size: 12px;
+  color: #becbdb;
+  padding: 10px 12px;
+  gap: 11px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+}
+.nav-link.selected {
+  background: linear-gradient(100deg, #eab45720, #eab45708);
+  border-color: #cfa65f50;
+  color: #ffd482;
+  box-shadow: inset 2px 0 #f6c66f;
+}
+.nav-link:hover {
+  background: #182430;
+  color: #fff;
+}
+.nav-count {
+  background: #b68b3e2b;
+  color: #f9dca5;
+  border: 1px solid #b6904b38;
+  font-size: 9px;
+}
+.sidebar-bottom {
+  margin-top: 27px;
+  padding-top: 0;
+}
+.club-card {
+  background: linear-gradient(140deg, #0e1b27e8, #080f16f2);
+  border-color: #a782475e;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 30px #0002;
+}
+.club-card:after {
+  display: none;
+}
+.club-symbol {
+  color: #ffd077;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 9px #f4ba4a45);
+}
+.club-card h3 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 23px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.1;
+  max-width: 155px;
+}
+.club-card p {
+  color: #b6c5d4;
+  font-size: 11px;
+  margin-top: 12px;
+}
+.club-card a {
+  background: linear-gradient(110deg, #ffdc8c, #f1b955);
+  color: #10151c;
+  border-radius: 4px;
+  padding: 9px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 18px;
+}
+.sidebar-bottom > .nav-link {
+  font-size: 11px;
+  color: #bac7d6;
+}
+.system-status {
+  color: #9baec1;
+  font-size: 8px;
+}
+.topbar {
+  height: 76px;
+  background: #0a131ce8;
+  border-color: #263442;
+  padding: 0 30px;
+  backdrop-filter: blur(15px);
+}
+.header-breadcrumb {
+  color: #9bacc0;
+  font-size: 11px;
+}
+.header-breadcrumb strong {
+  color: #e5edf6;
+}
+.header-breadcrumb span {
+  color: #64798f;
+}
+.header-search {
+  background: #08121b;
+  border-color: #334657;
+  height: 38px;
+  width: 280px;
+  color: #b9c8da;
+}
+.header-search input {
+  font-size: 11px;
+}
+.header-search kbd {
+  border-color: #435466;
+  color: #b7c4d2;
+}
+.header-divider {
+  background: #324353;
+}
+.profile-button {
+  color: #e4ebf5;
+}
+.avatar {
+  background: linear-gradient(140deg, #a686ff, #654bd5);
+  border-color: #c3b2ff55;
+  box-shadow: 0 0 18px #9071ed12;
+}
+.profile-menu {
+  background: #132130;
+  border-color: #45576b;
+}
+.notification-button i {
+  background: #ff5e54;
+  box-shadow: 0 0 8px #ff5e5440;
+}
+.demo-strip {
+  background: #101a25;
+  border-color: #273746;
+  color: #e0ca9f;
+  font-size: 9px;
+  padding: 7px 20px;
+}
+.demo-strip > span:not(.status-dot) {
+  color: #9eafc0;
+}
+.demo-strip button {
+  color: #d5c299;
+}
+.page {
+  padding: 30px;
+  max-width: 1600px;
+}
+.page-intro h1 {
+  font-size: 32px;
+  color: #f5f8ff;
+}
+.page-intro p {
+  font-size: 13px;
+  color: #b7c4d3;
+}
+.home-page {
+  padding-top: 20px;
+}
+.premium-hero {
+  height: 462px;
+  background: #08111a;
+  border: 1px solid #b99b5d3d;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 18px 70px #0003;
+  position: relative;
+}
+.chess-art {
+  background: #09121b;
+  overflow: hidden;
+  isolation: isolate;
+}
+.chess-photograph {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  position: absolute;
+  inset: 0;
+}
+.photograph-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #060e18c9, transparent 40%, #040c1220);
+  pointer-events: none;
+}
+.chess-art.purple,
+.chess-art.blue,
+.chess-art.green {
+  background: #09131e;
+}
+.chess-art.purple .chess-photograph {
+  filter: hue-rotate(180deg) saturate(0.5);
+  transform: scale(1.4) translateX(-12%);
+}
+.chess-art.blue .chess-photograph {
+  filter: hue-rotate(155deg) saturate(0.65);
+  transform: scale(1.4) translateX(-12%);
+}
+.chess-art.green .chess-photograph {
+  filter: hue-rotate(-23deg) saturate(1.15);
+}
+.premium-hero > .hero-art {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 76%;
+  height: 100%;
+  opacity: 1;
+  mask-image: none;
+}
+.premium-hero > .hero-art .chess-photograph {
+  object-position: right 28%;
+  filter: none;
+  transform: none;
+}
+.premium-hero > .hero-art .photograph-shade {
+  background:
+    linear-gradient(
+      90deg,
+      #08111a 0%,
+      #08111ad9 16%,
+      #08111a55 38%,
+      transparent 61%
+    ),
+    linear-gradient(0deg, #08111af5 0%, transparent 30%, #08111a22 100%);
+}
+.premium-hero .hero-copy {
+  position: relative;
+  z-index: 2;
+  padding: 42px 38px;
+  max-width: 80%;
+}
+.hero-kicker {
+  font-size: 9px;
+  color: #c1cddd;
+  letter-spacing: 2.5px;
+  margin-bottom: 16px;
+}
+.hero-kicker > span {
+  background: #d7bc85;
+  width: 16px;
+  position: relative;
+}
+.hero-kicker > span:after {
+  content: "";
+  width: 1px;
+  height: 7px;
+  background: #d7bc85;
+  position: absolute;
+  left: 5px;
+  top: -3px;
+}
+.premium-hero h1 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  text-transform: uppercase;
+  font-size: 69px;
+  font-weight: 700;
+  line-height: 0.91;
+  letter-spacing: -1.3px;
+  color: #fff;
+  max-width: 720px;
+  text-shadow: 0 3px 25px #020a13a0;
+}
+.premium-hero h1 em {
+  font-style: normal;
+  background: linear-gradient(125deg, #ffe6a9, #ffcb70 72%, #d99c42);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.premium-hero .hero-copy > p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #d4deeb;
+  margin-top: 22px;
+  text-shadow: 0 2px 10px #040c13;
+}
+.mobile-break {
+  display: none;
+}
+.hero-buttons {
+  margin-top: 25px;
+  gap: 15px;
+}
+.hero-buttons .button {
+  font-size: 12px;
+  padding: 13px 18px;
+  gap: 15px;
+}
+.hero-secondary {
+  border: 1px solid #a5b5c077;
+  background: #07121bb3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 17px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: #f2f7ff;
+}
+.hero-secondary:hover {
+  background: #1b2a38;
+  border-color: var(--gold);
+}
+.hero-platform {
+  color: #b7c7da;
+  font-size: 10px;
+  margin-top: 20px;
+}
+.hero-platform b {
+  color: #f4d99f;
+}
+.hero-platform > span {
+  gap: 4px;
+}
+.hero-quote {
+  position: absolute;
+  right: 25px;
+  bottom: 108px;
+  width: 191px;
+  padding: 19px 20px;
+  background: linear-gradient(135deg, #0c1722ed, #0c172299);
+  border: 1px solid #d6ae5a50;
+  border-radius: 9px;
+  z-index: 2;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px #0004;
+}
+.hero-quote > svg {
+  color: #f6c66f;
+  fill: #f6c66f;
+  transform: rotate(180deg);
+  width: 18px;
+  height: 18px;
+  margin-bottom: 8px;
+}
+.hero-quote p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #d6dfeb;
+}
+.hero-quote strong {
+  font-weight: 400;
+  color: #e8edf5;
+}
+.hero-quote > span {
+  display: block;
+  width: 27px;
+  height: 2px;
+  background: #ffcf74;
+  margin-top: 13px;
+  box-shadow: 0 0 14px #ffcf7466;
+}
+.stats-row.hero-stats {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 22px 32px;
+  border: 0;
+  border-top: 1px solid #e3c08821;
+  border-radius: 0;
+  background: linear-gradient(0deg, #08111aed, #08111a66);
+  z-index: 2;
+}
+.hero-stats .stat {
+  padding: 0 14px;
+  border-right: 1px solid #5b5d5636;
+  gap: 13px;
+  align-items: center;
+}
+.hero-stats .stat:last-child {
+  border: 0;
+}
+.hero-stats .stat-icon {
+  border: 0;
+  background: none;
+  color: #f8c56b;
+  width: 29px;
+  height: 32px;
+  filter: drop-shadow(0 0 10px #e9b24b20);
+  margin: 0;
+}
+.hero-stats .stat strong {
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.hero-stats .stat > div > span {
+  font-size: 11px;
+  color: #bdc9d8;
+  margin-top: 3px;
+}
+.hero-stats small {
+  display: none;
+}
+.home-tournaments {
+  margin-top: 33px;
+}
+.section-title h2 {
+  color: #f8faff;
+  font-size: 25px;
+  letter-spacing: -0.5px;
+}
+.section-title {
+  margin-bottom: 17px;
+}
+.section-title .text-link {
+  padding: 9px 12px;
+  border: 1px solid #bb91445e;
+  color: #f5cc83;
+  background: #101a20;
+  font-size: 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.section-title .text-link:hover {
+  border-color: #f6c66f;
+  background: #eac16a10;
+}
+.spotlight-toolbar {
+  margin-top: -9px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+.spotlight-toolbar > p {
+  font-size: 12px;
+  color: #b4c1d2;
+}
+.time-zone {
+  font-size: 9px;
+  color: #9bacbf;
+}
+.tournament-grid,
+.home-tournaments .tournament-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.home-tournaments .tournament-grid > .tournament-card:last-child {
+  display: block;
+}
+.tournament-card {
+  border-color: #80683f88;
+  background: linear-gradient(155deg, #111e2b, #09131e);
+  box-shadow: 0 12px 30px #0002;
+  border-radius: 9px;
+}
+.tournament-card:hover {
+  border-color: #e6bd72;
+  transform: translateY(-5px);
+  box-shadow:
+    0 16px 35px #0005,
+    0 0 24px #d8ab4710;
+}
+.tournament-purple {
+  border-color: #66779b70;
+}
+.tournament-green {
+  border-color: #8e684a70;
+}
+.tournament-blue {
+  border-color: #527c9b70;
+}
+.card-art-link {
+  height: 186px;
+  background: #0c1520;
+}
+.card-art-label {
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  align-items: flex-start;
+}
+.card-art-label .badge {
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  font-size: 8px;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border-color: #bbcad536;
+  background: #48556480;
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+.card-art-label .badge.green {
+  background: #138951e8;
+  border-color: #8ceaaf22;
+  box-shadow: 0 2px 15px #0002;
+}
+.card-art-bottom {
+  position: absolute;
+  bottom: 14px;
+  left: 17px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #f2f4fa;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-art-bottom i {
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background: #f7cc80;
+}
+.card-body {
+  padding: 18px 17px 0;
+}
+.card-body h3 {
+  font-size: 18px;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin-bottom: 14px;
+}
+.card-meta {
+  color: #bac7d8;
+  font-size: 10px;
+  margin-top: 10px;
+  justify-content: space-between;
+}
+.card-meta svg {
+  color: #d5b272;
+  width: 13px;
+  height: 13px;
+}
+.card-metrics {
+  display: grid;
+  grid-template-columns: 1.12fr 0.75fr 1fr;
+  gap: 8px;
+  margin-top: 19px;
+  padding-top: 14px;
+  border-top: 1px solid #34435375;
+}
+.card-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.card-metrics strong {
+  font-size: 15px;
+  font-weight: 550;
+  color: #f5f7fc;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.card-metrics > div:first-child strong {
+  color: #ffcf76;
+  font-weight: 650;
+  font-size: 18px;
+}
+.tournament-purple .card-metrics > div:first-child strong {
+  color: #c4a6ff;
+}
+.tournament-green .card-metrics > div:first-child strong {
+  color: #84e4a8;
+}
+.tournament-blue .card-metrics > div:first-child strong {
+  color: #9ad4ff;
+}
+.card-metrics small {
+  font-size: 9px;
+  color: #a9b9cb;
+}
+.card-metrics em {
+  font-style: normal;
+  color: #acbed1;
+  font-weight: 400;
+  font-size: 12px;
+}
+.capacity-track {
+  height: 4px;
+  background: #35435588;
+  margin-top: 17px;
+}
+.capacity-track > i {
+  background: linear-gradient(90deg, #e5a94c, #ffdc87);
+  opacity: 1;
+  box-shadow: 0 0 12px #eec56b66;
+  border-radius: 3px;
+}
+.tournament-purple .capacity-track > i {
+  background: linear-gradient(90deg, #9672e5, #cfb6ff);
+  box-shadow: 0 0 10px #c0a0ff44;
+}
+.tournament-green .capacity-track > i {
+  background: linear-gradient(90deg, #299557, #8cdda8);
+  box-shadow: 0 0 10px #77d39344;
+}
+.card-bottom {
+  margin-top: 0;
+  padding: 17px 0;
+  border: 0;
+  gap: 10px;
+}
+.card-bottom .button {
+  flex: 1;
+  font-size: 11px;
+  padding: 11px 12px;
+  justify-content: space-between;
+  gap: 5px;
+}
+.card-bottom .bookmark {
+  width: 37px;
+  height: 37px;
+  border: 1px solid #7182946b;
+  border-radius: 5px;
+  margin: 0;
+  color: #e8c888;
+  flex-shrink: 0;
+}
+.card-bottom .bookmark.active {
+  border-color: #f4c67d;
+  background: #f4c67d15;
+}
+.card-bottom .bookmark:hover {
+  border-color: var(--gold);
+}
+.next-arena {
+  margin-top: 31px;
+}
+.arena-feature {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: linear-gradient(110deg, #101e2d, #0b151f);
+  border: 1px solid #42546a;
+  border-radius: 9px;
+  overflow: hidden;
+  min-height: 153px;
+  transition: border-color 0.2s;
+}
+.arena-feature:hover {
+  border-color: #d1ab65;
+}
+.arena-feature-art {
+  position: relative;
+  width: 215px;
+  min-height: 153px;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+.arena-feature-art > .chess-art {
+  position: absolute;
+  inset: 0;
+}
+.arena-feature-art > .badge {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+}
+.arena-feature-copy {
+  padding: 22px 0;
+  min-width: 0;
+  flex: 1;
+}
+.arena-feature-copy .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  color: #cab27f;
+  margin-bottom: 8px;
+}
+.arena-feature-copy h3 {
+  font-size: 19px;
+  margin-bottom: 11px;
+}
+.arena-tags {
+  display: flex;
+  gap: 6px;
+}
+.arena-tags .badge {
+  font-size: 9px;
+  padding: 3px 6px;
+}
+.arena-feature-copy p {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 10px;
+  margin-top: 12px;
+  color: #acbdd0;
+}
+.arena-feature-copy p svg {
+  color: #d0ab69;
+}
+.arena-feature-prize {
+  min-width: 220px;
+  padding-left: 27px;
+  border-left: 1px solid #344759;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arena-feature-prize small {
+  font-size: 7px;
+  letter-spacing: 1.3px;
+  color: #9fadc0;
+}
+.arena-feature-prize strong {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #ffda8d;
+}
+.arena-feature-prize span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: #b7c5d6;
+  margin-top: 4px;
+}
+.arena-feature-arrow {
+  margin-right: 25px;
+  width: 35px;
+  height: 35px;
+  border: 1px solid #aa895855;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f6cd80;
+}
+.home-lower {
+  grid-template-columns: 1.1fr 1fr;
+  gap: 25px;
+  margin-top: 33px;
+}
+.schedule-panel {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.home-lower .section-title {
+  margin-bottom: 12px;
+}
+.home-lower .section-title h2 {
+  font-size: 23px;
+}
+.home-lower .section-title .text-link {
+  padding: 7px 9px;
+  font-size: 9px;
+}
+.section-subtitle {
+  font-size: 11px;
+  color: #b1bfd0;
+  margin-bottom: 18px;
+}
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.schedule-row {
+  border: 1px solid #243646;
+  border-radius: 7px;
+  background: linear-gradient(100deg, #152330, #0c1722);
+  padding: 10px;
+  gap: 10px;
+  min-height: 73px;
+}
+.schedule-row:last-child {
+  border: 1px solid #243646;
+  padding-bottom: 10px;
+}
+.schedule-row:hover {
+  border-color: #8a7857;
+  background: #172534;
+}
+.date-tile {
+  width: 39px;
+  padding: 7px 5px;
+  background: #1f3040;
+  border-color: #44586b80;
+}
+.date-tile span {
+  color: #c4d0de;
+  font-size: 8px;
+}
+.date-tile strong {
+  color: #fff;
+  font-size: 19px;
+}
+.schedule-thumb {
+  width: 48px;
+  height: 50px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.schedule-copy {
+  min-width: 0;
+}
+.schedule-row h3 {
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 550;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 205px;
+}
+.schedule-row p {
+  color: #b1bfd1;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.schedule-row p span {
+  color: #6b8299;
+  margin: 0 2px;
+}
+.schedule-row > .badge {
+  font-size: 8px;
+  color: #ead6af;
+  background: #1c2a38;
+  border-color: #697c8e55;
+  padding: 5px 6px;
+}
+.schedule-row > .badge.green {
+  color: #8ee6b0;
+  border-color: #509b7470;
+  background: #102a21;
+}
+.schedule-row > svg {
+  color: #d3dfed;
+  width: 13px;
+}
+.leaderboard-panel {
+  background: linear-gradient(120deg, #101d29, #0b1620);
+  border: 1px solid #2b3f51;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.leaderboard-heading {
+  display: grid;
+  grid-template-columns: 31px 1fr 45px;
+  gap: 12px;
+  padding: 11px 19px;
+  color: #95abc0;
+  font-size: 9px;
+  border-bottom: 1px solid #273b4c;
+  background: #142331;
+}
+.leaderboard-heading > span:last-child {
+  text-align: right;
+}
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 19px;
+  border-bottom: 1px solid #25374688;
+  min-height: 54px;
+}
+.leaderboard-row:last-child {
+  border: 0;
+}
+.podium {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d0dbe9;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.podium-0 {
+  color: #ffd27e;
+  filter: drop-shadow(0 0 7px #f3bc5744);
+}
+.podium-1 {
+  color: #c4d3e1;
+}
+.podium-2 {
+  color: #e59f76;
+}
+.leaderboard-avatar {
+  height: 27px;
+  width: 27px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  background: linear-gradient(135deg, #a98455, #4b3b2d);
+  color: #fff;
+  border: 1px solid #ffe0a633;
+  flex-shrink: 0;
+}
+.avatar-1 {
+  background: linear-gradient(135deg, #776ab0, #3c3761);
+}
+.avatar-2 {
+  background: linear-gradient(135deg, #647c9e, #273b53);
+}
+.avatar-3 {
+  background: linear-gradient(135deg, #ad7765, #58392e);
+}
+.avatar-4 {
+  background: linear-gradient(135deg, #739a88, #324f42);
+}
+.leaderboard-row strong {
+  font-size: 12px;
+  color: #e6edf7;
+  font-weight: 450;
+}
+.leaderboard-score {
+  margin-left: auto;
+  font-size: 14px;
+  color: #f9fbff;
+  font-weight: 550;
+}
+.leaderboard-empty {
+  padding: 30px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.how-section {
+  margin-top: 33px;
+}
+.how-section .section-title {
+  justify-content: flex-start;
+  gap: 15px;
+  margin-bottom: 17px;
+}
+.how-section .section-subtitle {
+  margin: 0;
+  font-size: 11px;
+}
+.how-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.how-strip > div:first-child {
+  grid-column: auto;
+}
+.how-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 23px 15px 20px;
+  min-height: 137px;
+  border: 1px solid #2c3b4c;
+  border-radius: 8px;
+  background: linear-gradient(130deg, #11202d, #0a151f);
+  position: relative;
+}
+.how-step > span {
+  position: absolute;
+  top: 8px;
+  left: 9px;
+  font-size: 9px;
+  color: #a3b4c7;
+  font-family: inherit;
+  background: #162332;
+  border: 1px solid #3c5169;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.how-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffda92;
+  border: 1px solid #b4975f88;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #0a141f;
+  margin-top: 2px;
+  box-shadow: 0 0 15px #f8c66a08;
+}
+.how-step:nth-child(3) .how-icon {
+  border-color: #8b74d7;
+  color: #ae91ff;
+}
+.how-step h3 {
+  font-size: 13px;
+  color: #fff;
+  margin: 5px 0 9px;
+}
+.how-step p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #b3c1d2;
+}
+.fairplay-strip {
+  padding-top: 27px;
+  color: #f0c878;
+}
+.fairplay-strip strong {
+  color: #e3eaf5;
+  font-size: 12px;
+}
+.fairplay-strip span {
+  color: #a9bacd;
+  font-size: 10px;
+}
+.fairplay-strip a {
+  color: #e5ca98;
+  font-size: 10px;
+}
+/* Carry the new visual language through registration, dashboards and discussions. */
+.panel,
+.settings-panel,
+.post,
+.faq-list details {
+  background: linear-gradient(145deg, #13202c, #0d1722);
+  border-color: #304254;
+  box-shadow: 0 7px 25px #0001;
+}
+.detail-banner {
+  background: #0a141e;
+  border-color: #9e825144;
+}
+.detail-banner > .chess-art {
+  width: 57%;
+  mask-image: linear-gradient(to right, transparent, #000 30%);
+}
+.detail-banner h1 {
+  color: #fff;
+  text-shadow: 0 2px 15px #000a;
+}
+.detail-banner p {
+  color: #b7c4d5;
+}
+.detail-banner p strong {
+  color: #f3d698;
+}
+.detail-info-grid > div {
+  background: #142231;
+  border-color: #384c60;
+}
+.detail-info-grid strong {
+  color: #f6f9ff;
+}
+.detail-info-grid small,
+.detail-info-grid span {
+  color: #bac8d9;
+}
+.detail-info-grid svg {
+  color: #e7bf77;
+}
+.check-list li {
+  color: #bdcbda;
+}
+.check-list svg {
+  color: #77d69b;
+}
+.registration-panel .entry-price {
+  color: #fff;
+}
+.registration-panel .entry-price > span,
+.registration-capacity,
+.deadline {
+  color: #b2c0d0;
+}
+.registration-capacity strong,
+.deadline strong,
+.chess-lobby strong {
+  color: #ebf0f8;
+}
+.registration-panel .capacity-track {
+  background: #344455;
+}
+.chess-lobby p {
+  color: #b3c1d1;
+}
+.share-button {
+  color: #d6bf92;
+  border-color: #304459;
+}
+.info-panel {
+  background: #172a3b;
+  border-color: #49617a;
+  color: #f1cb86;
+}
+.info-panel strong {
+  color: #eaf2ff;
+}
+.info-panel p {
+  color: #bfcede;
+}
+.tabs button {
+  color: #aabbd0;
+}
+.tabs button.active {
+  color: #ffd68a;
+  border-color: #f3c36e;
+}
+.filter-tabs,
+.detail-tabs,
+.dashboard-tabs {
+  border-color: #324557;
+}
+.filter-tabs select {
+  color: #c4cfdd;
+}
+.search-field {
+  background: #0e1c29;
+  border-color: #3a5065;
+  color: #a8bacd;
+}
+.search-field input {
+  color: #fff;
+}
+.advanced-filters {
+  background: #13202e;
+  border-color: #334b62;
+}
+.advanced-filters label {
+  color: #c0ccdb;
+}
+.results-summary {
+  color: #e7edf6;
+}
+.discovery-banner {
+  background: linear-gradient(110deg, #353022, #142331);
+  border-color: #a48a564c;
+  color: #f5cd83;
+}
+.discovery-banner strong {
+  color: #fff2d7;
+}
+.discovery-banner span:not(.badge) {
+  color: #c9c9bc;
+}
+.empty {
+  background: #12202e66;
+  border-color: #41566d;
+}
+.empty-icon {
+  color: #f0c776;
+}
+.empty p {
+  color: #b5c4d4;
+}
+.pagination button {
+  background: #122231;
+  border-color: #3a5066;
+  color: #c5d2e0;
+}
+.pagination button.active {
+  color: #14202a;
+  background: var(--gold);
+}
+th {
+  color: #a6bad0;
+  border-color: #3c536a;
+}
+td {
+  color: #d4e0ef;
+  border-color: #2b3d50;
+}
+td small {
+  color: #a3b7cd;
+}
+.rank {
+  background: #25384d;
+  color: #c9d9ec;
+}
+.rank-0 {
+  background: #b88a3825;
+  color: #ffdb92;
+}
+.rank-1 {
+  background: #c7ddf126;
+  color: #dbeeff;
+}
+.rank-2 {
+  background: #d18b5722;
+  color: #f4ba8b;
+}
+.dashboard-stats svg {
+  color: #f4c77c;
+}
+.dashboard-stats span {
+  color: #b5c4d8;
+}
+.dashboard-stats strong {
+  color: #fff;
+}
+.registration-item h2 {
+  color: #fff;
+}
+.registration-player small,
+.registration-player span,
+.registration-reference {
+  color: #a9bdd3;
+}
+.registration-player strong {
+  color: #f2d299;
+}
+.registration-item-footer {
+  border-color: #33485d;
+}
+.notice {
+  background: #142333;
+  border-color: #344c66;
+}
+.notice.unread {
+  background: #b3924310;
+  border-color: #af965e60;
+}
+.notice h3 {
+  color: #edf3ff;
+}
+.notice small {
+  color: #9fb6d0;
+}
+.notice > svg {
+  color: #e8c481;
+}
+.admin-nav button {
+  color: #b5c6da;
+}
+.admin-nav button.active {
+  background: #c5a35c19;
+  color: #ffdd98;
+}
+.admin-nav button:hover {
+  background: #1a2c3f;
+}
+.readiness-row,
+.integration-status {
+  border-color: #30475e;
+}
+.integration-status > span:not(.badge) {
+  color: #b2c3d6;
+}
+.community-filters > button {
+  color: #bacbdd;
+}
+.community-filters > button.active {
+  background: #d2b26619;
+  color: #ffe0a3;
+}
+.post-author strong {
+  color: #e9f1ff;
+}
+.post-author small {
+  color: #a3b8cf;
+}
+.orange-avatar {
+  background: linear-gradient(135deg, #ffd992, #b37d37);
+  color: #151f29;
+}
+.post-actions {
+  border-color: #31485d;
+}
+.post-actions button {
+  color: #c4d2e1;
+}
+.comment small {
+  color: #a8bcd2;
+}
+.post-full-body {
+  color: #d1deec;
+}
+.modal {
+  background: linear-gradient(140deg, #172838, #0c1825);
+  border-color: #6d7d8e;
+  box-shadow: 0 30px 100px #000b;
+}
+.modal-head h2 {
+  color: #fff;
+}
+.stack-form label {
+  color: #d0dbea;
+}
+.checkbox-label {
+  color: #c1cfdf;
+}
+.checkbox-label a {
+  color: #ffe0a1;
+}
+.price-summary {
+  background: #091622;
+  border-color: #344d64;
+}
+.price-summary > div {
+  color: #b6c8dc;
+}
+.price-summary strong,
+.price-summary > .total {
+  color: #f4f7ff;
+}
+.price-summary > .total {
+  border-color: #344d64;
+}
+.secure-note {
+  color: #a7bcd2;
+}
+.form-step > span {
+  background: #2a3540;
+  border-color: #89744d;
+  color: #ffdc91;
+}
+.player-preview {
+  background: #1f6d4218;
+  border-color: #46956a;
+}
+.player-preview strong {
+  color: #fff;
+}
+.form-error {
+  color: #ffbcac;
+  background: #ed654918;
+  border-color: #e88a6b66;
+}
+.form-success {
+  color: #b3f1cc;
+  background: #2f9b5820;
+  border-color: #4c9b71;
+}
+.auth-emblem {
+  background: #f3bf6620;
+  border-color: #f3c66a66;
+  color: #ffd58a;
+}
+.demo-login > span,
+.demo-login small {
+  color: #a3b9d1;
+}
+.auth-switch .text-button {
+  color: #ffda94;
+}
+.registration-success > svg {
+  color: #7be2a0;
+}
+.registration-success strong {
+  color: #f5d49a;
+}
+.about-hero {
+  background: linear-gradient(110deg, #17212b, #0b1520);
+  border-color: #a38a574f;
+}
+.about-hero .hero-art {
+  opacity: 0.35;
+}
+.about-values svg {
+  color: #efc97f;
+}
+.about-values p,
+.about-explainer p,
+.prose p {
+  color: #b7c7da;
+}
+.prose a {
+  color: #ffd38b;
+}
+.divider {
+  background: #34465b;
+}
+.toast {
+  background: #17382b;
+  border-color: #67a782;
+  color: #e7fff0;
+}
+.toast.error {
+  background: #482a28;
+  border-color: #a3685d;
+  color: #ffe3db;
+}
+footer {
+  border-color: #293e51;
+  color: #adbed1;
+  padding: 24px 30px;
+}
+.footer-brand {
+  color: #e7c37f;
+}
+footer > p {
+  color: #8da3bb;
+}
+footer > div a:hover {
+  color: #ffdaa0;
+}
+.skeleton {
+  background: linear-gradient(90deg, #12202d, #25394b, #12202d);
+  background-size: 200% 100%;
+}
+.app-loading {
+  color: #ebd09e;
+}
+@media (min-width: 1600px) {
+  .page {
+    padding: 35px 42px;
+  }
+  .home-page {
+    padding-top: 24px;
+  }
+  .premium-hero {
+    height: 505px;
+  }
+  .premium-hero .hero-copy {
+    padding: 50px 45px;
+  }
+  .premium-hero h1 {
+    font-size: 83px;
+  }
+  .premium-hero .hero-copy > p {
+    font-size: 16px;
+  }
+  .hero-buttons .button,
+  .hero-secondary {
+    font-size: 13px;
+  }
+  .card-art-link {
+    height: 215px;
+  }
+  .card-body {
+    padding: 20px 21px 0;
+  }
+  .card-body h3 {
+    font-size: 20px;
+  }
+  .card-meta {
+    font-size: 11px;
+  }
+  .card-metrics strong {
+    font-size: 17px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 21px;
+  }
+  .card-metrics small {
+    font-size: 10px;
+  }
+  .card-bottom .button {
+    font-size: 12px;
+  }
+  .schedule-row {
+    min-height: 82px;
+  }
+  .schedule-row h3 {
+    font-size: 14px;
+    max-width: 260px;
+  }
+  .schedule-row p {
+    font-size: 10px;
+  }
+  .leaderboard-row {
+    min-height: 62px;
+  }
+  .how-step {
+    padding: 26px 21px;
+    min-height: 150px;
+  }
+  .how-step h3 {
+    font-size: 15px;
+  }
+  .how-step p {
+    font-size: 12px;
+  }
+}
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 200px;
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .app-shell {
+    margin-left: 200px;
+  }
+  .brand {
+    font-size: 16px;
+    gap: 7px;
+  }
+  .brand-icon {
+    width: 29px;
+  }
+  .brand small {
+    font-size: 7px;
+  }
+  .nav-link {
+    font-size: 11px;
+    padding: 10px;
+  }
+  .page {
+    padding: 25px;
+  }
+  .home-page {
+    padding-top: 18px;
+  }
+  .topbar {
+    padding: 0 25px;
+  }
+  .header-search {
+    width: 225px;
+  }
+  .premium-hero {
+    height: 435px;
+  }
+  .premium-hero .hero-copy {
+    padding: 35px 28px;
+  }
+  .premium-hero h1 {
+    font-size: 58px;
+  }
+  .premium-hero .hero-copy > p {
+    font-size: 12px;
+    margin-top: 21px;
+  }
+  .hero-buttons .button,
+  .hero-secondary {
+    font-size: 11px;
+    padding: 12px 14px;
+  }
+  .hero-quote {
+    width: 160px;
+    right: 19px;
+    padding: 15px;
+    bottom: 99px;
+  }
+  .hero-quote p {
+    font-size: 10px;
+  }
+  .stats-row.hero-stats {
+    padding: 20px 18px;
+  }
+  .hero-stats .stat {
+    padding: 0 10px;
+    gap: 10px;
+  }
+  .hero-stats .stat strong {
+    font-size: 22px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 9px;
+  }
+  .card-art-link {
+    height: 161px;
+  }
+  .card-body {
+    padding: 15px 13px 0;
+  }
+  .card-body h3 {
+    font-size: 15px;
+  }
+  .card-meta {
+    font-size: 8px;
+  }
+  .card-meta span {
+    gap: 5px;
+  }
+  .card-meta svg {
+    width: 11px;
+    height: 11px;
+  }
+  .card-art-label {
+    left: 11px;
+    right: 11px;
+    top: 11px;
+  }
+  .card-art-label .badge {
+    font-size: 7px;
+    padding: 4px 5px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 16px;
+  }
+  .card-metrics strong {
+    font-size: 13px;
+  }
+  .card-metrics em {
+    font-size: 10px;
+  }
+  .card-metrics small {
+    font-size: 8px;
+  }
+  .card-bottom .button {
+    font-size: 9px;
+    padding: 10px;
+  }
+  .card-bottom .bookmark {
+    width: 32px;
+    height: 34px;
+  }
+  .card-bottom {
+    gap: 7px;
+  }
+  .arena-feature {
+    gap: 18px;
+    min-height: 135px;
+  }
+  .arena-feature-art {
+    width: 175px;
+    min-height: 135px;
+  }
+  .arena-feature-prize {
+    min-width: 170px;
+    padding-left: 18px;
+  }
+  .arena-feature-prize strong {
+    font-size: 30px;
+  }
+  .arena-feature-prize small {
+    font-size: 6px;
+  }
+  .arena-feature-prize span {
+    font-size: 8px;
+  }
+  .arena-feature-copy h3 {
+    font-size: 17px;
+  }
+  .arena-feature-arrow {
+    margin-right: 18px;
+    width: 30px;
+    height: 30px;
+  }
+  .arena-feature-copy .eyebrow {
+    font-size: 7px;
+  }
+  .arena-tags .badge {
+    font-size: 8px;
+  }
+  .arena-feature-copy p {
+    font-size: 9px;
+  }
+  .home-lower {
+    gap: 18px;
+    grid-template-columns: 1.05fr 1fr;
+  }
+  .home-lower .section-title h2 {
+    font-size: 20px;
+  }
+  .home-lower .section-title .text-link {
+    font-size: 8px;
+    padding: 6px;
+    gap: 3px;
+  }
+  .home-lower .section-title .text-link svg {
+    width: 12px;
+  }
+  .schedule-thumb {
+    width: 35px;
+    height: 43px;
+  }
+  .date-tile {
+    width: 34px;
+  }
+  .schedule-row {
+    gap: 8px;
+    padding: 9px;
+    min-height: 67px;
+  }
+  .schedule-row:last-child {
+    padding-bottom: 9px;
+  }
+  .schedule-row h3 {
+    font-size: 10px;
+    max-width: 150px;
+  }
+  .schedule-row p {
+    font-size: 7px;
+  }
+  .schedule-row > .badge {
+    font-size: 7px;
+    padding: 4px;
+  }
+  .schedule-row > svg {
+    display: none;
+  }
+  .leaderboard-row {
+    padding: 11px 12px;
+    gap: 9px;
+    min-height: 49px;
+  }
+  .leaderboard-heading {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .leaderboard-row strong {
+    font-size: 11px;
+  }
+  .leaderboard-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .how-strip {
+    gap: 10px;
+  }
+  .how-step {
+    padding: 23px 12px 17px;
+    gap: 10px;
+    min-height: 145px;
+  }
+  .how-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .how-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .how-step h3 {
+    font-size: 12px;
+  }
+  .how-step p {
+    font-size: 9px;
+  }
+  .club-card h3 {
+    font-size: 22px;
+  }
+}
+@media (max-width: 1000px) {
+  .sidebar {
+    width: 180px;
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+  .app-shell {
+    margin-left: 180px;
+  }
+  .brand {
+    font-size: 14px;
+  }
+  .brand-icon {
+    width: 26px;
+  }
+  .brand small {
+    font-size: 6px;
+    letter-spacing: 1.6px;
+  }
+  .nav-link {
+    font-size: 10px;
+    gap: 9px;
+  }
+  .sidebar-label {
+    font-size: 8px;
+  }
+  .club-card {
+    padding: 17px 12px;
+  }
+  .club-card h3 {
+    font-size: 21px;
+  }
+  .club-card p {
+    font-size: 10px;
+  }
+  .club-card a {
+    font-size: 9px;
+  }
+  .hero-quote {
+    display: none;
+  }
+  .premium-hero {
+    height: 419px;
+  }
+  .premium-hero .hero-copy {
+    max-width: 94%;
+    padding: 34px 27px;
+  }
+  .premium-hero h1 {
+    font-size: 53px;
+  }
+  .premium-hero > .hero-art {
+    width: 76%;
+    opacity: 0.9;
+  }
+  .premium-hero > .hero-art .photograph-shade {
+    background:
+      linear-gradient(90deg, #08111a, #08111a99 28%, #08111a15 70%),
+      linear-gradient(0deg, #08111a, transparent 40%);
+  }
+  .hero-stats .stat-icon {
+    width: 24px;
+  }
+  .hero-stats .stat-icon svg {
+    width: 20px;
+  }
+  .hero-stats .stat {
+    gap: 7px;
+    padding: 0 5px;
+  }
+  .hero-stats .stat strong {
+    font-size: 19px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 8px;
+  }
+  .hero-kicker {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+  .hero-platform {
+    font-size: 9px;
+  }
+  .tournament-grid,
+  .home-tournaments .tournament-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .home-tournaments .tournament-grid > .tournament-card:last-child {
+    display: none;
+  }
+  .card-art-link {
+    height: 183px;
+  }
+  .card-body {
+    padding: 17px 16px 0;
+  }
+  .card-body h3 {
+    font-size: 18px;
+  }
+  .card-meta {
+    font-size: 10px;
+  }
+  .card-art-label .badge {
+    font-size: 8px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 19px;
+  }
+  .card-metrics strong {
+    font-size: 15px;
+  }
+  .card-metrics small {
+    font-size: 9px;
+  }
+  .card-bottom .button {
+    font-size: 11px;
+  }
+  .arena-feature-art {
+    width: 155px;
+    min-height: 143px;
+  }
+  .arena-feature-prize {
+    min-width: 130px;
+    padding-left: 14px;
+  }
+  .arena-feature-prize small {
+    display: none;
+  }
+  .arena-feature-prize strong {
+    font-size: 27px;
+  }
+  .arena-feature-prize span {
+    font-size: 8px;
+    max-width: 110px;
+    flex-wrap: wrap;
+    line-height: 1.5;
+  }
+  .arena-feature-arrow {
+    display: none;
+  }
+  .arena-feature {
+    padding-right: 17px;
+    gap: 15px;
+  }
+  .arena-feature-copy .eyebrow {
+    font-size: 6px;
+  }
+  .home-lower {
+    grid-template-columns: 1fr;
+    gap: 29px;
+  }
+  .home-lower .section-title h2 {
+    font-size: 24px;
+  }
+  .home-lower .section-title .text-link {
+    font-size: 10px;
+    padding: 8px 11px;
+  }
+  .schedule-row {
+    min-height: 78px;
+    padding: 11px 13px;
+    gap: 13px;
+  }
+  .schedule-row:last-child {
+    padding-bottom: 11px;
+  }
+  .date-tile {
+    width: 42px;
+  }
+  .date-tile strong {
+    font-size: 21px;
+  }
+  .schedule-thumb {
+    width: 60px;
+    height: 52px;
+  }
+  .schedule-row h3 {
+    font-size: 14px;
+    max-width: 260px;
+  }
+  .schedule-row p {
+    font-size: 10px;
+  }
+  .schedule-row > .badge {
+    font-size: 10px;
+    padding: 5px 7px;
+  }
+  .schedule-row > svg {
+    display: block;
+  }
+  .leaderboard-heading {
+    padding: 12px 19px;
+    font-size: 10px;
+  }
+  .leaderboard-row {
+    padding: 13px 19px;
+    min-height: 58px;
+    gap: 12px;
+  }
+  .leaderboard-avatar {
+    width: 29px;
+    height: 29px;
+  }
+  .leaderboard-row strong {
+    font-size: 13px;
+  }
+  .how-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+  }
+  .how-step {
+    min-height: 120px;
+    padding: 24px 18px;
+    gap: 15px;
+  }
+  .how-icon {
+    width: 43px;
+    height: 43px;
+  }
+  .how-step h3 {
+    font-size: 14px;
+  }
+  .how-step p {
+    font-size: 11px;
+  }
+  .how-section .section-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .detail-banner > .chess-art {
+    width: 65%;
+  }
+}
+@media (max-width: 760px) {
+  .sidebar {
+    width: 235px;
+    padding: 29px 17px;
+  }
+  .app-shell {
+    margin-left: 0;
+  }
+  .sidebar.open .brand {
+    font-size: 19px;
+  }
+  .sidebar.open .brand small {
+    font-size: 8px;
+  }
+  .sidebar.open .brand-icon {
+    width: 33px;
+  }
+  .sidebar.open .nav-link {
+    font-size: 12px;
+  }
+  .sidebar-label {
+    font-size: 9px;
+  }
+  .sidebar-bottom {
+    margin-top: 24px;
+  }
+  .club-card h3 {
+    font-size: 24px;
+  }
+  .club-card p {
+    font-size: 11px;
+  }
+  .club-card a {
+    font-size: 11px;
+  }
+  .topbar {
+    height: 65px;
+    padding: 0 20px;
+  }
+  .header-breadcrumb {
+    font-size: 10px;
+    gap: 9px;
+  }
+  .topbar-right > .button {
+    font-size: 11px;
+    padding: 9px 11px;
+  }
+  .demo-strip {
+    font-size: 8px;
+    padding: 7px 16px;
+  }
+  .demo-strip > span:not(.status-dot) {
+    font-size: 7px;
+  }
+  .page {
+    padding: 26px 20px;
+  }
+  .home-page {
+    padding-top: 17px;
+  }
+  .premium-hero {
+    height: 440px;
+  }
+  .premium-hero .hero-copy {
+    padding: 36px 29px;
+    max-width: 96%;
+  }
+  .premium-hero h1 {
+    font-size: 59px;
+  }
+  .premium-hero .hero-copy > p {
+    font-size: 13px;
+    max-width: 420px;
+    margin-top: 21px;
+  }
+  .hero-buttons {
+    gap: 13px;
+    margin-top: 23px;
+  }
+  .hero-buttons .button,
+  .hero-secondary {
+    font-size: 12px;
+    padding: 12px 15px;
+  }
+  .hero-platform {
+    font-size: 10px;
+    margin-top: 20px;
+  }
+  .hero-kicker {
+    font-size: 8px;
+    letter-spacing: 2.1px;
+  }
+  .premium-hero > .hero-art {
+    width: 83%;
+    opacity: 0.83;
+  }
+  .stats-row.hero-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 20px 17px;
+    gap: 7px;
+  }
+  .hero-stats .stat {
+    gap: 8px;
+    padding: 0 5px;
+  }
+  .hero-stats .stat strong {
+    font-size: 21px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 8px;
+  }
+  .hero-stats .stat-icon svg {
+    width: 21px;
+  }
+  .hero-stats .stat-icon {
+    width: 22px;
+  }
+  .section-title h2 {
+    font-size: 24px;
+  }
+  .spotlight-toolbar > p {
+    font-size: 11px;
+  }
+  .spotlight-toolbar .time-zone {
+    font-size: 8px;
+  }
+  .card-body h3 {
+    font-size: 17px;
+  }
+  .card-art-link {
+    height: 180px;
+  }
+  .card-meta {
+    font-size: 9px;
+  }
+  .card-metrics strong {
+    font-size: 14px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 18px;
+  }
+  .card-bottom .button {
+    font-size: 10px;
+  }
+  .arena-feature {
+    gap: 16px;
+    min-height: 140px;
+  }
+  .arena-feature-art {
+    width: 155px;
+    min-height: 140px;
+  }
+  .arena-feature-prize {
+    min-width: 135px;
+  }
+  .arena-feature-prize strong {
+    font-size: 29px;
+  }
+  .arena-feature-copy h3 {
+    font-size: 18px;
+  }
+  .home-lower .section-title h2 {
+    font-size: 23px;
+  }
+  .home-lower .section-title .text-link {
+    font-size: 9px;
+    padding: 8px;
+  }
+  .schedule-row h3 {
+    max-width: 250px;
+  }
+  .schedule-row p {
+    font-size: 9px;
+  }
+  .how-section .section-subtitle {
+    font-size: 11px;
+  }
+  .fairplay-strip strong {
+    font-size: 11px;
+  }
+  .fairplay-strip span {
+    font-size: 10px;
+  }
+  .fairplay-strip a {
+    font-size: 9px;
+  }
+  footer {
+    padding: 24px 20px;
+  }
+  .detail-info-grid strong {
+    font-size: 14px;
+  }
+  .modal {
+    background: linear-gradient(140deg, #172838, #0c1825);
+  }
+  .about-hero h1 {
+    font-size: 34px;
+  }
+}
+@media (max-width: 600px) {
+  .premium-hero {
+    height: 454px;
+  }
+  .premium-hero .hero-copy {
+    padding: 32px 24px;
+    max-width: 100%;
+  }
+  .premium-hero h1 {
+    font-size: clamp(42px, 9.7vw, 58px);
+    line-height: 0.96;
+    letter-spacing: -1px;
+  }
+  .premium-hero .hero-copy > p {
+    font-size: 12px;
+    max-width: 325px;
+    line-height: 1.8;
+    margin-top: 20px;
+  }
+  .hero-kicker {
+    font-size: 7px;
+    letter-spacing: 1.65px;
+  }
+  .hero-buttons .button,
+  .hero-secondary {
+    font-size: 10px;
+    padding: 11px 13px;
+    gap: 8px;
+  }
+  .hero-buttons {
+    gap: 10px;
+    margin-top: 23px;
+  }
+  .hero-platform {
+    font-size: 9px;
+    margin-top: 18px;
+  }
+  .premium-hero > .hero-art {
+    width: 100%;
+    opacity: 0.68;
+  }
+  .premium-hero > .hero-art .chess-photograph {
+    object-position: 70% 30%;
+  }
+  .premium-hero > .hero-art .photograph-shade {
+    background:
+      linear-gradient(90deg, #08111af0, #08111a77 70%, #08111a44),
+      linear-gradient(0deg, #08111a, transparent 65%);
+  }
+  .stats-row.hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 19px 16px;
+    padding: 18px 24px;
+    background: linear-gradient(0deg, #0b1722, #0b1722d9);
+  }
+  .hero-stats .stat {
+    gap: 11px;
+    padding: 0;
+    border-right: 0;
+  }
+  .hero-stats .stat strong {
+    font-size: 22px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 9px;
+  }
+  .hero-stats .stat-icon {
+    width: 28px;
+  }
+  .hero-stats .stat-icon svg {
+    width: 23px;
+  }
+  .section-title .text-link {
+    font-size: 9px;
+    padding: 8px 9px;
+    gap: 5px;
+  }
+  .section-title .text-link svg {
+    width: 13px;
+  }
+  .spotlight-toolbar {
+    margin-top: -9px;
+    gap: 8px;
+  }
+  .spotlight-toolbar .time-zone {
+    display: none;
+  }
+  .arena-feature {
+    flex-wrap: wrap;
+    padding: 0;
+    gap: 0;
+    align-items: stretch;
+  }
+  .arena-feature-art {
+    width: 33%;
+    min-height: 145px;
+  }
+  .arena-feature-copy {
+    padding: 22px 17px;
+    flex-basis: 67%;
+  }
+  .arena-feature-copy .eyebrow {
+    font-size: 7px;
+  }
+  .arena-feature-copy h3 {
+    font-size: 18px;
+  }
+  .arena-feature-copy p {
+    font-size: 10px;
+  }
+  .arena-feature-prize {
+    border: 0;
+    border-top: 1px solid #344759;
+    padding: 14px 18px;
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 13px;
+    justify-content: space-between;
+    min-width: 100%;
+  }
+  .arena-feature-prize small {
+    display: none;
+  }
+  .arena-feature-prize strong {
+    font-size: 28px;
+  }
+  .arena-feature-prize span {
+    max-width: none;
+    font-size: 10px;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+  .schedule-thumb {
+    width: 44px;
+    height: 48px;
+  }
+  .schedule-row {
+    gap: 9px;
+    padding: 10px;
+  }
+  .schedule-row:last-child {
+    padding-bottom: 10px;
+  }
+  .schedule-row h3 {
+    font-size: 12px;
+    max-width: 190px;
+  }
+  .schedule-row p {
+    font-size: 8px;
+  }
+  .schedule-row > .badge {
+    font-size: 8px;
+    padding: 4px 6px;
+  }
+  .schedule-row > svg {
+    display: none;
+  }
+  .date-tile {
+    width: 37px;
+  }
+  .date-tile strong {
+    font-size: 20px;
+  }
+  .home-lower .section-title h2 {
+    font-size: 22px;
+  }
+  .how-step {
+    padding: 24px 15px 18px;
+    gap: 12px;
+    min-height: 139px;
+  }
+  .how-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .how-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .how-step h3 {
+    font-size: 13px;
+  }
+  .how-step p {
+    font-size: 10px;
+  }
+  .fairplay-strip {
+    flex-wrap: wrap;
+  }
+  .fairplay-strip a {
+    margin-left: 36px;
+  }
+  .topbar-right > .button {
+    font-size: 10px;
+  }
+}
+@media (max-width: 480px) {
+  .page {
+    padding: 24px 17px;
+  }
+  .home-page {
+    padding-top: 15px;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+  .header-breadcrumb {
+    font-size: 9px;
+  }
+  .premium-hero {
+    height: 460px;
+    border-radius: 9px;
+  }
+  .premium-hero .hero-copy {
+    padding: 29px 21px;
+    max-width: 100%;
+  }
+  .premium-hero h1 {
+    font-size: clamp(37px, 10vw, 47px);
+    line-height: 0.97;
+    letter-spacing: -0.9px;
+  }
+  .hero-kicker {
+    font-size: 6px;
+    letter-spacing: 1.6px;
+    margin-bottom: 17px;
+  }
+  .hero-kicker > span {
+    width: 11px;
+  }
+  .premium-hero .hero-copy > p {
+    font-size: 12px;
+    max-width: 285px;
+    margin-top: 20px;
+  }
+  .mobile-break {
+    display: block;
+  }
+  .hero-buttons {
+    gap: 9px;
+    margin-top: 22px;
+  }
+  .hero-buttons .button {
+    font-size: 10px;
+    padding: 11px 12px;
+    gap: 9px;
+  }
+  .hero-secondary {
+    font-size: 10px;
+    padding: 11px 12px;
+    gap: 7px;
+  }
+  .hero-secondary svg {
+    width: 15px;
+    height: 15px;
+  }
+  .hero-buttons .button svg {
+    width: 14px;
+  }
+  .hero-platform {
+    font-size: 8px;
+    margin-top: 18px;
+  }
+  .hero-platform svg {
+    width: 12px;
+  }
+  .stats-row.hero-stats {
+    padding: 19px 20px;
+    gap: 20px 15px;
+  }
+  .hero-stats .stat strong {
+    font-size: 22px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 8px;
+  }
+  .hero-stats .stat {
+    gap: 10px;
+  }
+  .hero-stats .stat-icon {
+    width: 24px;
+  }
+  .hero-stats .stat-icon svg {
+    width: 22px;
+  }
+  .home-tournaments {
+    margin-top: 28px;
+  }
+  .section-title h2 {
+    font-size: 22px;
+    max-width: none;
+  }
+  .section-title {
+    align-items: center;
+    gap: 9px;
+  }
+  .section-title .text-link {
+    font-size: 8px;
+    padding: 7px;
+    gap: 3px;
+  }
+  .spotlight-toolbar > p {
+    font-size: 11px;
+  }
+  .tournament-grid,
+  .home-tournaments .tournament-grid {
+    grid-template-columns: 1fr;
+    gap: 21px;
+  }
+  .home-tournaments .tournament-grid > .tournament-card:last-child {
+    display: block;
+  }
+  .card-art-link {
+    height: 207px;
+  }
+  .card-art-label {
+    top: 15px;
+    left: 17px;
+    right: 17px;
+  }
+  .card-art-label .badge {
+    font-size: 9px;
+    padding: 5px 8px;
+  }
+  .card-art-bottom {
+    left: 20px;
+    bottom: 15px;
+    font-size: 11px;
+  }
+  .card-body {
+    padding: 20px 19px 0;
+  }
+  .card-body h3 {
+    font-size: 21px;
+    margin-bottom: 15px;
+  }
+  .card-meta {
+    font-size: 11px;
+    margin-top: 11px;
+  }
+  .card-meta svg {
+    width: 14px;
+    height: 14px;
+  }
+  .card-meta span {
+    gap: 7px;
+  }
+  .card-metrics {
+    margin-top: 20px;
+    padding-top: 15px;
+    gap: 12px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 23px;
+  }
+  .card-metrics strong {
+    font-size: 18px;
+  }
+  .card-metrics em {
+    font-size: 14px;
+  }
+  .card-metrics small {
+    font-size: 10px;
+  }
+  .capacity-track {
+    height: 5px;
+    margin-top: 19px;
+  }
+  .card-bottom {
+    padding: 18px 0;
+    gap: 11px;
+  }
+  .card-bottom .button {
+    font-size: 12px;
+    padding: 12px 14px;
+  }
+  .card-bottom .bookmark {
+    width: 41px;
+    height: 41px;
+  }
+  .next-arena {
+    margin-top: 29px;
+  }
+  .next-arena .section-title h2 {
+    font-size: 21px;
+  }
+  .arena-feature-art {
+    width: 31%;
+    min-height: 146px;
+  }
+  .arena-feature-copy {
+    flex-basis: 69%;
+    padding: 21px 13px;
+  }
+  .arena-feature-copy h3 {
+    font-size: 17px;
+  }
+  .arena-feature-copy .eyebrow {
+    font-size: 6px;
+    letter-spacing: 0.9px;
+  }
+  .arena-tags .badge {
+    font-size: 7px;
+    padding: 3px 5px;
+  }
+  .arena-tags {
+    gap: 5px;
+  }
+  .arena-tags svg {
+    width: 10px;
+  }
+  .arena-feature-copy p {
+    font-size: 8px;
+    gap: 5px;
+  }
+  .arena-feature-copy p svg {
+    width: 11px;
+  }
+  .arena-feature-prize {
+    padding: 14px 16px;
+  }
+  .arena-feature-prize strong {
+    font-size: 27px;
+  }
+  .arena-feature-prize span {
+    font-size: 8px;
+  }
+  .arena-feature-art > .badge {
+    font-size: 7px;
+    left: 10px;
+    top: 10px;
+  }
+  .home-lower {
+    margin-top: 29px;
+    gap: 29px;
+  }
+  .home-lower .section-title h2 {
+    font-size: 21px;
+  }
+  .home-lower .section-title .text-link {
+    font-size: 8px;
+    padding: 7px;
+  }
+  .section-subtitle {
+    font-size: 11px;
+    margin-bottom: 15px;
+  }
+  .schedule-row {
+    padding: 9px;
+    gap: 8px;
+    min-height: 74px;
+  }
+  .schedule-row:last-child {
+    padding-bottom: 9px;
+  }
+  .schedule-thumb {
+    width: 39px;
+    height: 46px;
+  }
+  .date-tile {
+    width: 34px;
+    padding: 7px 4px;
+  }
+  .date-tile span {
+    font-size: 7px;
+  }
+  .date-tile strong {
+    font-size: 19px;
+  }
+  .schedule-row h3 {
+    font-size: 11px;
+    max-width: 155px;
+  }
+  .schedule-row p {
+    font-size: 7px;
+    white-space: normal;
+    line-height: 1.8;
+  }
+  .schedule-row > .badge {
+    font-size: 8px;
+    padding: 4px;
+  }
+  .leaderboard-row {
+    gap: 11px;
+    padding: 13px 15px;
+    min-height: 58px;
+  }
+  .leaderboard-heading {
+    padding: 12px 15px;
+    font-size: 9px;
+  }
+  .leaderboard-row strong {
+    font-size: 12px;
+  }
+  .leaderboard-score {
+    font-size: 14px;
+  }
+  .leaderboard-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .how-section {
+    margin-top: 29px;
+  }
+  .how-section .section-title {
+    gap: 8px;
+  }
+  .how-section .section-subtitle {
+    font-size: 10px;
+  }
+  .how-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+  }
+  .how-step {
+    padding: 25px 13px 18px;
+    flex-direction: column;
+    gap: 13px;
+    min-height: 190px;
+  }
+  .how-icon {
+    width: 43px;
+    height: 43px;
+  }
+  .how-step > span {
+    left: 10px;
+    top: 8px;
+    font-size: 8px;
+    width: 18px;
+    height: 18px;
+  }
+  .how-step h3 {
+    font-size: 15px;
+    margin: 0 0 8px;
+  }
+  .how-step p {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .fairplay-strip strong {
+    font-size: 11px;
+  }
+  .fairplay-strip span {
+    font-size: 9px;
+  }
+  .fairplay-strip a {
+    font-size: 10px;
+  }
+  .fairplay-strip > svg {
+    width: 23px;
+  }
+  footer {
+    padding: 22px 17px;
+  }
+  .detail-banner h1 {
+    font-size: 30px;
+  }
+  .page-intro h1 {
+    font-size: 28px;
+  }
+  .page-intro p {
+    font-size: 12px;
+  }
+  .card-meta {
+    color: #c1cede;
+  }
+  .card-metrics small {
+    color: #b5c4d6;
+  }
+  .sidebar.open .brand {
+    font-size: 19px;
+  }
+  .about-hero h1 {
+    font-size: 31px;
+  }
+}
+@media (max-width: 359px) {
+  .hero-buttons .button,
+  .hero-secondary {
+    padding: 10px 9px;
+    font-size: 9px;
+  }
+  .hero-buttons {
+    gap: 7px;
+  }
+  .premium-hero h1 {
+    font-size: 35px;
+  }
+  .hero-kicker {
+    letter-spacing: 1.2px;
+    font-size: 6px;
+  }
+  .hero-stats .stat strong {
+    font-size: 19px;
+  }
+  .hero-stats .stat > div > span {
+    font-size: 7px;
+  }
+  .schedule-thumb {
+    display: none;
+  }
+  .section-title .text-link {
+    font-size: 7px;
+    padding: 6px;
+  }
+  .section-title h2 {
+    font-size: 20px;
+  }
+  .card-metrics > div:first-child strong {
+    font-size: 21px;
+  }
+}
+@media (max-height: 820px) and (min-width: 761px) {
+  .sidebar {
+    padding-top: 22px;
+  }
+  .brand {
+    margin-bottom: 30px;
+  }
+  .sidebar-label.second {
+    margin-top: 20px;
+  }
+  .sidebar-bottom {
+    margin-top: 20px;
+  }
+  .club-card {
+    padding: 14px;
+  }
+  .club-symbol {
+    margin-bottom: 10px;
+  }
+  .club-symbol svg {
+    width: 27px;
+    height: 27px;
+  }
+  .club-card h3 {
+    font-size: 21px;
+  }
+  .club-card p {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+  .club-card a {
+    margin-top: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chess-photograph {
+    transition: none;
+  }
+}
+
+.chess-art.purple .chess-photograph,
+.chess-art.blue .chess-photograph {
+  transform: none;
+  filter: none;
+  object-position: center 48%;
+}
