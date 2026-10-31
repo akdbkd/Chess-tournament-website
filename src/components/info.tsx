@@ -254,7 +254,7 @@ const legal: Record<string, { title: string; sections: [string, string][] }> = {
       ],
       [
         "Organizer cancellation",
-        "For canceled events, organizers should reject affected paid entries and issue full refunds through the organizer studio. Players receive a status update when the refund is processed.",
+        "Cancelling an event withdraws active entries and queues paid entries for full refund. Organizers initiate refunds through the organizer studio. Players receive a status update when the refund is processed.",
       ],
       [
         "Failed or delayed payments",
@@ -298,18 +298,44 @@ const legal: Record<string, { title: string; sections: [string, string][] }> = {
 };
 export function Legal({ slug }: { slug: string }) {
   const page = legal[slug] || legal.terms;
+  const app = useApp();
   return (
     <div className="page narrow-page">
       <div className="eyebrow">THE RULES OF OUR ARENA</div>
       <h1>{page.title}</h1>
-      <p className="muted">Last updated 30 October 2026</p>
+      <p className="muted">Last updated 31 October 2026</p>
+      {app.settings?.operator_name && (
+        <div className="panel prose">
+          <p>
+            Operated by <strong>{app.settings.operator_name}</strong>
+          </p>
+          <p>{app.settings.jurisdiction}</p>
+          <p>
+            Support:{" "}
+            <a href={"mailto:" + app.settings.support_email}>
+              {app.settings.support_email}
+            </a>
+          </p>
+          <p>
+            Retention review period: {app.settings.retention_days} days.
+            Payment, audit and dispute records may be retained as required by
+            applicable law.
+          </p>
+        </div>
+      )}
       <div className="panel prose">
-        {page.sections.map(([title, body]) => (
-          <section key={title}>
-            <h2>{title}</h2>
-            <p>{body}</p>
-          </section>
-        ))}
+        {page.sections
+          .filter(
+            ([title]) =>
+              !app.settings?.operator_name ||
+              !["Operator details", "Live launch requirements"].includes(title),
+          )
+          .map(([title, body]) => (
+            <section key={title}>
+              <h2>{title}</h2>
+              <p>{body}</p>
+            </section>
+          ))}
       </div>
     </div>
   );

@@ -1,169 +1,123 @@
 # Knightfall Arena
 
-A complete chess-event application built with **Next.js App Router, TypeScript, Supabase Auth/PostgreSQL, and Razorpay**, prepared for **Vercel**. Chess.com hosts every game; Knightfall manages the tournament experience around it.
+Chess esports event management built with **Next.js 16, React 19, TypeScript, Supabase Auth/PostgreSQL and Razorpay**, targeting **Vercel / Node.js 22+**. Based on `codex/premium-arena-design` at `ed9327b` and retaining its gold and midnight visual design.
 
-[Desktop preview](docs/desktop-preview.png) · [Mobile preview](docs/mobile-preview.png) · [Verification record](VALIDATION.md)
+Chess.com hosts games, pairings and clocks. Knightfall manages discovery, eligibility, entries, checkout, check-in, reviewed standings, community and administration.
 
-## Visual design
-
-Luminous gold controls, midnight-blue surfaces, high-contrast typography, a cinematic knight hero, image-led tournament cards, an upcoming-event spotlight, reviewed circuit standings, and a responsive four-step onboarding section. The same palette carries through checkout, player dashboards, community, and the organizer studio. Home-page figures remain sourced from the application data and demo figures are labeled.
-
-## Run the included demo
-
-Requires Node.js 22 or newer and npm.
+## Try the demo
 
 ```sh
 npm ci
-npm run dev
+NEXT_PUBLIC_DEMO_MODE=true npm run dev
 ```
 
-Open `http://localhost:3000`. No credentials are needed for demo mode. Select **Join the arena → Explore as a demo player**. For administration, open **Organizer studio → Explore the demo studio**.
+Open `http://localhost:3000`. Use **Join the arena → Explore as a demo player**, or **Join the arena → Explore as a demo admin**. Demo activity lives in browser localStorage; entries, payments, standings and player counts are illustrative. Live account mutations are rejected in demo mode. Demo builds are excluded from search indexing.
 
-Demo activity is stored in browser localStorage. Sample events, player counts, prize amounts, and standings are illustrative. A demo registration never charges money or joins a real Chess.com tournament. Clear the site's browser storage to reset the demo.
-
-## What's included
-
-- Responsive black-and-gold esports design, cinematic chess artwork, keyboard focus states, accessible dialogs, mobile navigation, loading/error/empty states.
-- Eight realistic sample tournaments; URL-persisted search, category/status/format/fee/rating/date filters, sorting and pagination.
-- Tournament overview, public participants, rules, match-day schedule, organizer-imported standings and event-specific discussions.
-- Website users separate from Chess.com players. Any authenticated user can submit an eligible player's entry with their permission.
-- Public Chess.com profile/stat lookup, timeout handling, short-lived cache, account-age/rating validation and normalized username uniqueness.
-- Supabase email/password signup/signin, verification, password recovery/reset, account settings, USER/ORGANIZER/ADMIN roles.
-- Server-enforced registrations, row-locked capacity checks, duplicate prevention, manual/automatic approval, 30-minute check-in, withdrawals, calendar downloads and saved events.
-- Razorpay server-created orders with database-authoritative amounts, signature verification, captured-payment checks, exact-body signed webhooks, idempotent confirmations, a permanent order ledger and full-refund workflows.
-- Player dashboard, notifications, organizer tournament CRUD, registration CSV export, standings CSV import, refund queue, role management, community moderation and audit logs.
-- Community posts, comments, reactions, reports, category filters, event-specific discussions, and locked threads.
-- Help center, about page, fair-play guidelines, privacy, terms, and refund policy pages.
-- PostgreSQL schema, seed script, environment template, Vercel configuration and automated tests.
-
-## Connect Supabase
-
-1. Create a Supabase project. Run **`supabase/schema.sql`** once in its SQL editor on a new database. It creates tables, RLS policies, triggers and server-only transactional RPCs.
-2. Copy `.env.example` to `.env.local`. Add the project URL and anon/publishable-compatible key, and a server-only service-role key. Never put the service-role key in a `NEXT_PUBLIC_` variable.
-3. Set `NEXT_PUBLIC_DEMO_MODE=false` for the live application. This is a build-time flag; rebuild after changing it. Demo and production data are intentionally separate.
-4. In Supabase Auth, enable email/password, email confirmations, a production SMTP provider, and suitable authentication rate limits. Add your domain as Site URL and allow `/dashboard` and `/reset-password` redirect URLs, plus localhost for development. Configure Supabase CAPTCHA if required for your traffic profile.
-5. Sign up normally and confirm your email. Grant the first administrator using the SQL editor, using **your actual auth user UUID**:
-
-```sql
-update public.profiles set role = 'ADMIN' where id = 'YOUR-AUTH-USER-UUID';
-```
-
-The initial profile trigger ignores roles in signup metadata. Subsequent role changes are available to admins in the studio. Never distribute a shared admin password.
-
-### Optional staging seed
-
-Create the organizer account through signup, grant ORGANIZER or ADMIN, add `SEED_ORGANIZER_ID=<that-profile-uuid>` to `.env.local`, then run:
+For a production-mode demo preview:
 
 ```sh
-npm run seed
+NEXT_PUBLIC_DEMO_MODE=true npm run build
+NEXT_PUBLIC_DEMO_MODE=true npm start
 ```
 
-Eight templates are inserted as **drafts**, with zero claimed registrations. Existing tournament rows are not overwritten. Sample counts and sample auth users are not copied to your production database. Review every date, prize distribution, contact detail, eligibility rule, and Chess.com lobby before publishing. Create real test accounts with separate emails for USER, ORGANIZER, and ADMIN when testing permissions.
+## Deploy the live application
 
-## Configure Razorpay
+Follow [the deployment runbook](docs/DEPLOYMENT.md). Copy `.env.example` to `.env.local` for local live development, and set environment variables directly in your hosting provider for deployment. **Do not commit service keys.** Public variables are baked into the browser bundle; rebuild after changing them.
 
-Use Razorpay **test-mode** credentials first:
+1. Create a Supabase project. For a new database run `supabase/schema.sql`. For an existing database, back it up and apply the pending migrations in order: `20261031000000_production_hardening.sql`, then `20261031010000_identity_controls.sql`. If release 1.1.0 is already installed, apply only the identity-controls migration.
+2. Configure Supabase email confirmations, production SMTP, TOTP MFA, password policy, rate limits and redirect URLs.
+3. Configure a server-only `AUTH_COOKIE_SECRET` with at least 32 random characters. In Supabase Auth, configure Google, Microsoft (Azure) and Discord using your provider client IDs/secrets and callback URLs, then enable the desired methods in **Settings → Sign-in & accounts**. Email/password is enabled by default; social providers start disabled.
+4. Sign up and verify your first administrator. Assign the initial role in the SQL editor using that account's actual auth UUID:
 
-```text
-RAZORPAY_KEY_ID=your_test_key_id
-RAZORPAY_KEY_SECRET=your_test_key_secret
-RAZORPAY_WEBHOOK_SECRET=your_separate_webhook_secret
-```
+   ```sql
+   update public.profiles set role = 'ADMIN' where id = 'YOUR-AUTH-USER-UUID';
+   ```
 
-1. Enable automatic payment capture in Razorpay.
-2. Add a webhook pointing to `https://YOUR-DOMAIN/api/payments/webhook`.
-3. Subscribe to `payment.captured` and `refund.processed`. Set the webhook secret to match the server environment.
-4. Complete an end-to-end test checkout and verify both callback and webhook delivery. Replay the webhook to confirm the entry and notification remain singular.
-5. Test a closed/abandoned checkout, a late capture, withdrawal, organizer rejection and full refund.
-6. Switch to live keys only after your Razorpay business account is activated and your operator/prize/policy details are complete.
+5. Sign in, set up and verify an authenticator, then open the studio. Fill in operator identity, support email, jurisdiction/contact address and retention review period in **Settings**. Paid events cannot be published until operator details are set.
+6. Configure Razorpay test keys and the signed webhook. Complete the provider acceptance checks in the runbook before using live keys.
+7. Import this repository into Vercel with the Next.js preset, Node 22+, `npm ci` and `npm run build`. Set `NEXT_PUBLIC_DEMO_MODE=false` and your canonical HTTPS domain. Leave the output directory at its default.
+8. Configure the optional authenticated maintenance scheduler for reminders and expired-hold cleanup. Deploy and perform live acceptance checks.
 
-Payment details stay with Razorpay. The browser never chooses the price. A server-verified `captured` payment is required for paid approval. Reserving an entry alone is not confirmation.
+`npm run check:production` rejects demo mode, missing live configuration, insecure domain values, incomplete payment credentials and weak scheduler/webhook secrets. `npm run build` runs configuration validation automatically. No configured provider accounts are present in this execution environment; a passing demo build does not verify live payments, email, MFA delivery or deployment.
 
-Unpaid holds last 15 minutes. Expired holds are excluded from capacity when the next reservation runs. An old captured payment has a permanent order record even if the player re-registers; it is added to **Organizer studio → Refunds**, without overwriting the newer entry. A callback failure can be recovered by the signed webhook. Refund requests stay pending until the webhook confirms processing. Refunds are full refunds; partial refunds are not implemented.
+## Features
 
-## Deploy to Vercel
+- Responsive tournament catalog, filters, sorting, saved events, rules, participants, calendar downloads, reviewed standings and event discussions.
+- Separate website identities and Chess.com players; registrations may be submitted with a player's permission. Public Chess.com profile/rating/account-age checks and case-insensitive duplicate prevention.
+- Row-locked capacity reservations, free/paid entries, approval, check-in, withdrawal, recorded rules acceptance and notifications.
+- Server-created Razorpay orders, captured-payment verification, signed exact-body webhooks, permanent order ledger, late-payment recovery and full refunds.
+- Email/password, Google, Microsoft and Discord login with server-controlled enable/disable switches, a global new-sign-in switch and a separate new-account switch. OAuth uses PKCE, encrypted flow cookies and one-use handoffs; the provider token is verified against the selected provider.
+- Admin links and the `/admin` workspace/API are visible/available only to ADMIN accounts. Direct private database reads also require an application-authorized session. Existing users must sign in once after applying the identity-controls migration.
+- Authenticator setup and verification. All organizer/admin API operations require a verified AAL2 session; trusted roles come from the database.
+- Searchable, paginated tournament, registration, refund, user, moderation, report and audit management; per-event CSV exports up to 10,000 historical entries (larger histories require a database export).
+- Confirmed role changes and suspensions, ownership-scoped organizer access, reversible post hiding/locking, reply review and deletion, report resolution and transactional audit records.
+- Transactional tournament edits with stale-version protection, immutable entry fees after registrations start, guarded eligibility changes and lifecycle transitions.
+- Tournament cancellation withdraws active entries, queues full refunds and notifies each affected website account once. Cancelled/completed/archived events cannot reopen.
+- Persistent operator settings, announcements, registration/community pause switches, legal contact details and retention review information.
+- Optional scheduled in-app day-before/check-in reminders, expired payment holds and rate-limit cleanup. These require a configured scheduler; they do not send email.
+- Nonce-based CSP, HSTS and other security headers, no-store API responses, bounded JSON/webhook bodies, origin checks, distributed rate limiting and redacted error correlation IDs.
+- CI runs type checks, unit/API/PostgreSQL tests, dependency audit, production demo build and desktop/mobile browser regression checks.
 
-1. Push the project to a repository you own, or import the source through your normal Vercel workflow.
-2. Create a Vercel project with the **Next.js** framework preset. Node.js 22+, install `npm ci`, build `npm run build`; use the default output directory.
-3. Add the variables from `.env.example` in Vercel's project settings. Set `NEXT_PUBLIC_SITE_URL` to your canonical HTTPS domain and `NEXT_PUBLIC_DEMO_MODE=false` for live mode.
-4. Deploy. If using the CLI in your authenticated environment: `vercel --prod`.
-5. Update Supabase redirect URLs and Razorpay's webhook to the resulting domain. Redeploy after any change to public variables.
-6. Set a custom domain, verify HTTPS, and run the launch checks below.
+## Payments and refunds
 
-`vercel.json` selects the Mumbai region for application functions. Match your Supabase region as appropriate for your account. Hosting, database and payment-service fees are paid through your own provider accounts.
+Automatic capture must be enabled in Razorpay. Subscribe `/api/payments/webhook` to `payment.captured` and `refund.processed`. The browser cannot choose prices or declare a payment successful. Captured amounts/currency/order identity are checked server-side.
 
-**No live Vercel/Supabase/Razorpay resources were created in the build environment: no credentials were connected.** The source, SQL and integrations are implemented; external activation is still required.
+Unpaid holds expire after 15 minutes. A late captured payment is queued for refund without overwriting a newer entry. Callback and webhook confirmations share an idempotent database transaction. Refund requests are claimed in the database before contacting Razorpay and use a stable `X-Refund-Idempotency` key. After an interruption, wait two minutes and use **Issue / check full refund** to reconcile or retry. Processed callbacks update the order, matching registration, counts, notification and audit log atomically. Partial refunds and automated prize payouts are not implemented.
 
-## Chess.com workflow
+## Admin and event operations
 
-Organizers create and administer the actual club tournament in Chess.com. Paste its HTTPS event/lobby URL in the tournament editor. Players must join that lobby themselves before play. Knightfall does not log into Chess.com accounts, create remote tournaments, join on behalf of players, or scrape authenticated pages. It uses only public read APIs.
+Users cannot assign themselves roles. Administrators cannot change their own access. Suspended accounts are rejected by the API and cannot directly read private records through RLS. The admin workspace and its collection/export/settings endpoints require ADMIN. The legacy ORGANIZER role retains ownership-scoped event mutation APIs but has no admin navigation or workspace access. Admin access is verified on every request.
 
-Chess.com has no public write API for these operations. Pairings and clocks remain on Chess.com. Standings are imported by an organizer from reviewed results, not automatically synchronized. For Classical events, eligibility uses the available Chess.com rapid rating, as Chess.com does not provide a separate classical public rating field.
+Editors save the version they loaded; stale edits must be reloaded. Existing fees cannot change after entries begin. Eligibility and time control cannot change with active entries. Publish a new event for a different competition. Use **Cancel event** to notify players and queue refunds. Closing registration alone does not cancel entries.
 
-All displayed event times use Asia/Kolkata (IST). Editor date inputs use the organizer's browser timezone and are stored in UTC.
-
-### Standings CSV
+For live standings, close registration first and import only approved/checked-in participants. Names normalize to lower case. Imports and audit records commit together.
 
 ```csv
 username,score,wins,draws,losses,tiebreak
-tacticalrook,7,7,0,0,32
-endgame_artist,6.5,6,1,0,30
+registered_player,6.5,6,1,0,30
 ```
 
-The importer accepts this simple unquoted format, validates numeric fields and usernames, and upserts by event + player. Results sort by score then tie-break. Imported demo results are local to the browser.
+Chess.com does not provide a public tournament write API. Organizers supply the real HTTPS lobby URL and import reviewed results. No remote tournament creation, player account login, automatic standings synchronization or proprietary cheat detection is claimed. Classical eligibility uses the available Chess.com rapid rating.
 
-## Architecture
+The tournament editor includes **Minimum Chess.com account age (days)**. A value of 0 removes the age minimum; otherwise the player’s Chess.com join date is checked at registration by both the API and database. This refers to the player account, not the website account.
 
-```text
-src/app/                 App Router layout, route dispatch, metadata and API
-src/components/          Shared design system and feature views
-src/lib/server.ts        Auth, role checks, rate limits, Chess.com and Razorpay
-src/lib/validation.ts    Shared Zod schemas and eligibility rules
-src/lib/types.ts         Domain models
-src/lib/data.ts          Explicit demo fixtures and display formatting
-src/lib/csv.ts           CSV import/export with spreadsheet-injection protection
-supabase/schema.sql      Tables, RLS, permissions and transactional functions
-scripts/seed.ts          Optional staging templates
-tests/                  Unit, validation and PostgreSQL integration checks
-```
+Displayed event times use Asia/Kolkata (IST); editor inputs use the organizer's browser timezone and are stored in UTC.
 
-Supabase replaces the separate Prisma/Auth.js layers so authentication, database permissions and hosted PostgreSQL share one coherent setup. Direct browser writes have no RLS policy; sensitive changes go through server routes, authenticate a Supabase bearer token with `getUser`, and read the trusted role from `profiles`. User/organizer IDs from the browser never establish authority.
-
-The database serializes reservations, payment confirmations and registration transitions by locking the tournament row. A case-insensitive generated username column and event/player unique constraint prevent duplicate entries. SQL SECURITY DEFINER functions are revoked from public, anon and authenticated roles, and granted only to service_role. Community bodies render as text rather than raw HTML.
-
-Production rate limits use a PostgreSQL counter, so limits survive serverless cold starts. Supabase handles auth endpoint limits; configure those in its dashboard. The demo-only public Chess.com lookup uses a bounded in-memory counter.
-
-## Validation
+## Checks
 
 ```sh
 npm run typecheck
 npm test
-npm run build
+npm audit --audit-level=moderate
+NEXT_PUBLIC_DEMO_MODE=true npm run build
 ```
 
-For browser checks, run the application in another terminal, then:
+With the demo server running:
 
 ```sh
 npx playwright install chromium
 npm run test:browser
 ```
 
-Browser checks use a fresh isolated profile and only demo data. They cover registration, persistence, duplicates, filters, community, organizer editing/imports, mobile layouts and anonymous API rejection. Run against demo mode; `TEST_BASE_URL` optionally changes the target. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects an existing Chromium binary. Screenshots and temporary artifacts go into ignored `work/`.
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` selects an existing Chromium binary. `TEST_BASE_URL` overrides the browser target. Browser tests are for isolated demo environments. Temporary outputs go to ignored `work/`.
 
-The database suite runs real PostgreSQL semantics in PGlite, with an isolated Supabase auth-schema shim. It covers RLS, role restrictions, unique constraints, eligibility, capacity, payment amounts, webhook/callback idempotence, late captures and withdrawal transitions. The migration is run from scratch in tests; the unused `pgcrypto` extension declaration is skipped in the embedded runner because `gen_random_uuid` is built in. Run the unmodified schema on Supabase.
+The PostgreSQL suites use PGlite with an isolated Supabase auth-schema shim, including a rerunnable upgrade migration. API tests mock the provider boundary to verify authorization and request controls. Neither replaces acceptance testing against your actual Supabase/Razorpay tenant. See [VALIDATION.md](VALIDATION.md) and [the security review](SECURITY.md).
 
-## Launch checks and operational details
+## Optional staging templates
 
-- Replace the demo brand/operator placeholders as needed; publish legal entity, contact/support, jurisdiction, consent/age rules, retention schedule and actual event prize distribution before taking real entries.
-- Set support email in the admin settings. Verify email verification and password recovery against your SMTP setup.
-- Test normal users, two separate organizers, and an admin. Verify that one organizer cannot modify another's tournament or payments.
-- Test a free entry, manual approval, paid entry, duplicate username in different case, full capacity, rating restriction, new account restriction, early/late check-in and withdrawal.
-- Confirm payment callbacks, captured webhooks, webhook retries, and full-refund webhook updates using Razorpay test mode.
-- Add the Chess.com lobby before match day and verify it with the organizer's intended membership restrictions.
-- Back up the Supabase database, monitor Vercel function errors and Razorpay webhook failures, and periodically prune old `rate_limits` rows.
+Create an active ORGANIZER or ADMIN profile, set `SEED_ORGANIZER_ID` to its UUID, then `npm run seed`. Templates are inserted as drafts, without fabricated live counts or shared passwords. Review dates, eligibility, prizes, policies and lobbies before publishing.
 
-Implemented notifications cover registration, payment and status changes. Time-based reminders, automatic Chess.com standings synchronization, automated prize payouts, age/country-restricted events, invite codes and waitlist promotion are not enabled. No fabricated integration status is used to imply these capabilities are live. Live authentication, real provider payments, SMTP delivery and deployment require validation against your connected accounts.
+## Source layout
 
-## Assets
+```text
+src/app/                  Routes, metadata, public API and security headers
+src/components/           Player experience, MFA and admin management
+src/lib/                  Validation, server authorization, HTTP and CSV helpers
+src/proxy.ts              Per-request CSP nonce, request ID and private API caching
+supabase/schema.sql       Fresh database installation
+supabase/migrations/      Existing-database upgrade
+scripts/                  Seed and release-configuration validation
+tests/                   Unit, API, SQL and browser regression checks
+```
 
-Cinematic chess artwork was generated for this project and is included as optimized WebP assets in `public/art/`. The brand mark and decorative interface elements use SVG/CSS. DM Sans, Barlow Condensed, and Cormorant Garamond are self-hosted under the SIL Open Font License; license files are in `public/fonts/`.
+The artwork is included as optimized WebP in `public/art/`. Self-hosted fonts carry their SIL Open Font License files in `public/fonts/`.

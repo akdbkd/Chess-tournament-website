@@ -99,14 +99,16 @@ export function Chrome({ children }: { children: React.ReactNode }) {
             <Bookmark size={19} />
             Saved tournaments
           </Link>
-          <Link
-            className={"nav-link " + (path === "/admin" ? "selected" : "")}
-            href="/admin"
-            onClick={() => setMobile(false)}
-          >
-            <ShieldCheck size={19} />
-            Organizer studio
-          </Link>
+          {app.profile?.role === "ADMIN" && (
+            <Link
+              className={"nav-link " + (path === "/admin" ? "selected" : "")}
+              href="/admin"
+              onClick={() => setMobile(false)}
+            >
+              <ShieldCheck size={19} />
+              Organizer studio
+            </Link>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="club-card">
@@ -158,7 +160,9 @@ export function Chrome({ children }: { children: React.ReactNode }) {
                   : path.startsWith("/tournaments/")
                     ? "Tournament details"
                     : path === "/admin"
-                      ? "Organizer studio"
+                      ? app.profile?.role === "ADMIN"
+                        ? "Organizer studio"
+                        : "Page unavailable"
                       : path === "/dashboard"
                         ? "Your playbook"
                         : path.slice(1).replace("-", " ")}
@@ -260,6 +264,17 @@ export function Chrome({ children }: { children: React.ReactNode }) {
           </div>
         )}
         <main id="main-content">
+          {app.settings?.announcement && (
+            <div className="announcement-banner" role="status">
+              {app.settings.announcement}
+            </div>
+          )}
+          {app.settings && !app.settings.registrations_enabled && (
+            <div className="announcement-banner">
+              New registrations are temporarily paused. You can still manage
+              your existing entries.
+            </div>
+          )}
           {app.error && (
             <div className="error-banner">
               {app.error}

@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import { api, demoMode, supabase } from "@/lib/supabase";
 import { tournaments as samples, posts as samplePosts } from "@/lib/data";
@@ -15,6 +16,8 @@ import type {
   Post,
   Notice,
 } from "@/lib/types";
+import type { SiteSettings } from "@/lib/settings";
+import { defaultSettings } from "@/lib/settings";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 type Store = {
   tournaments: Tournament[];
@@ -23,6 +26,7 @@ type Store = {
   posts: Post[];
   notices: Notice[];
   profile: Profile | null;
+  settings: SiteSettings | null;
 };
 type App = Store & {
   ready: boolean;
@@ -48,6 +52,14 @@ const initial: Store = {
   posts: demoMode ? samplePosts : [],
   notices: [],
   profile: null,
+  settings: demoMode
+    ? {
+        ...defaultSettings,
+        google_login_enabled: true,
+        microsoft_login_enabled: true,
+        discord_login_enabled: true,
+      }
+    : null,
 };
 export function Provider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store>(initial),
@@ -57,6 +69,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
     [toast, setToast] = useState<{ message: string; error: boolean } | null>(
       null,
     );
+  const refreshGeneration = useRef(0);
   const update = useCallback(
     (v: Partial<Store>) => setStore((s) => ({ ...s, ...v })),
     [],
@@ -67,22 +80,36 @@ export function Provider({ children }: { children: React.ReactNode }) {
   );
   const refresh = useCallback(async () => {
     if (demoMode) return;
+    const generation = ++refreshGeneration.current;
     try {
-      const [tournaments, posts] = await Promise.all([
+      const session = (await supabase?.auth.getSession())?.data.session;
+      const [tournaments, posts, settings] = await Promise.all([
         api("tournaments"),
         api("posts"),
+        api("settings/public"),
       ]);
-      update({ tournaments, posts });
-      if (supabase && (await supabase.auth.getSession()).data.session) {
-        const me = await api("me");
-        update(me);
-      } else
-        update({ profile: null, registrations: [], saved: [], notices: [] });
+      const authFlow =
+        window.location.pathname.startsWith("/auth/") ||
+        window.location.pathname === "/reset-password";
+      const me =
+        session && !authFlow
+          ? await api("me")
+          : { profile: null, registrations: [], saved: [], notices: [] };
+      const current = (await supabase?.auth.getSession())?.data.session;
+      if (
+        refreshGeneration.current !== generation ||
+        current?.access_token !== session?.access_token
+      )
+        return;
+      update({ tournaments, posts, settings, ...me });
       setError("");
     } catch (e) {
+      if (refreshGeneration.current !== generation) return;
       setError((e as Error).message);
+      // Never retain another session's private data after auth/account failure.
+      update({ profile: null, registrations: [], saved: [], notices: [] });
     } finally {
-      setReady(true);
+      if (refreshGeneration.current === generation) setReady(true);
     }
   }, [update]);
   useEffect(() => {
@@ -92,7 +119,11 @@ export function Provider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const s = JSON.parse(raw);
           if (Array.isArray(s.tournaments) && Array.isArray(s.registrations))
-            setStore({ ...initial, ...s });
+            setStore({
+              ...initial,
+              ...s,
+              settings: { ...initial.settings, ...s.settings },
+            });
         }
       } catch {}
       setReady(true);
@@ -216,6 +247,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
         save,
         action,
         signout: async () => {
+          refreshGeneration.current++;
           await supabase?.auth.signOut();
           update({
             profile: null,

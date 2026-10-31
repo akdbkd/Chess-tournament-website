@@ -85,10 +85,12 @@ export function Tournaments() {
             From your first open to the grand prize. There’s a board for you.
           </p>
         </div>
-        <Link className="button secondary" href="/admin">
-          Host a tournament
-          <ArrowUpRight size={16} />
-        </Link>
+        {app.profile?.role === "ADMIN" && (
+          <Link className="button secondary" href="/admin">
+            Host a tournament
+            <ArrowUpRight size={16} />
+          </Link>
+        )}
       </div>
       <div className="discovery-banner">
         <Trophy size={30} />
@@ -304,6 +306,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       </div>
     );
   const closed =
+    app.settings?.registrations_enabled === false ||
     t.status !== "open" ||
     new Date(t.registration_closes).getTime() < Date.now() ||
     t.participants >= t.capacity;

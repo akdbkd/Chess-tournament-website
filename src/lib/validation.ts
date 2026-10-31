@@ -32,6 +32,7 @@ export const tournamentSchema = z
     min_account_days: z.number().int().min(0).max(3650),
     chess_url: z
       .string()
+      .max(2048)
       .refine(
         (v) => !v || isChessUrl(v),
         "Use an HTTPS Chess.com tournament URL.",
@@ -44,6 +45,7 @@ export const tournamentSchema = z
       "live",
       "completed",
       "archived",
+      "cancelled",
     ]),
     featured: z.boolean(),
     color: z.enum(["orange", "purple", "green", "blue"]),
@@ -61,6 +63,9 @@ export function isChessUrl(v: string) {
     const u = new URL(v);
     return (
       u.protocol === "https:" &&
+      !u.username &&
+      !u.password &&
+      (!u.port || u.port === "443") &&
       (u.hostname === "www.chess.com" || u.hostname === "chess.com") &&
       /^\/(tournament|play|club|events)\//.test(u.pathname)
     );

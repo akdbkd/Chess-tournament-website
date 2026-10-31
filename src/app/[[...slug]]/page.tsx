@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AuthComplete } from "@/components/auth-complete";
 import { Home } from "@/components/home";
 import {
   Tournaments,
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   return {
     title,
-    robots: ["dashboard", "admin", "reset-password"].includes(s[0])
+    robots: ["dashboard", "admin", "reset-password", "auth"].includes(s[0])
       ? { index: false, follow: false }
       : undefined,
   };
@@ -69,8 +70,27 @@ export default async function Page({ params }: Props) {
         return <ResetPassword />;
     }
   }
-  if (s.length === 2 && s[0] === "tournaments")
+  if (
+    s.length === 2 &&
+    s[0] === "auth" &&
+    ["complete", "confirmed"].includes(s[1])
+  )
+    return <AuthComplete confirmed={s[1] === "confirmed"} />;
+  if (s.length === 2 && s[0] === "tournaments") {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== "true") {
+      const { db, checked } = await import("@/lib/server");
+      const found = checked(
+        await db()
+          .from("tournaments")
+          .select("id")
+          .eq("slug", s[1])
+          .not("status", "in", "(draft,archived)")
+          .maybeSingle(),
+      );
+      if (!found) notFound();
+    }
     return <TournamentDetail slug={s[1]} />;
+  }
   if (
     s.length === 2 &&
     s[0] === "legal" &&
