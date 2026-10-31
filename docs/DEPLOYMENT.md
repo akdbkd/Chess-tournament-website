@@ -1,14 +1,15 @@
 # Deployment runbook
 
-Release 1.1.0 · 31 October 2026 · Vercel / Supabase / Razorpay
+Release 1.2.0 · 31 October 2026 · Vercel / Supabase / Razorpay
 
 The source is implemented and locally verified. No live infrastructure, domain, SMTP account or payment credentials were connected during this task. Complete these steps before accepting live registrations.
 
 ## 1. Database
 
 - New Supabase project: run `supabase/schema.sql` once.
-- Existing project from `codex/premium-arena-design`: take a provider backup, test restoring it to staging, then apply `supabase/migrations/20261031_production_hardening.sql`. Do not rerun the fresh-install schema.
+- Existing project from `codex/premium-arena-design`: take a provider backup, test restoring it to staging, then apply `supabase/migrations/20261031000000_production_hardening.sql`, followed by `supabase/migrations/20261031010000_identity_controls.sql`. A 1.1.0 database needs only the latter migration. Do not rerun the fresh-install schema.
 - The upgrade preserves existing users, tournaments, orders and entries. New consent fields remain empty on historical registrations; they are populated on new registrations. No historical consent is fabricated.
+- The identity upgrade requires existing users to sign in again once. Their profile, entries and payment history remain intact.
 - The upgrade is transactional and rerunnable. Test it in staging first. Do not roll back by dropping tables that contain payment records.
 - All tables have RLS. Sensitive RPCs are executable only by `service_role`. Keep the service-role key server-only.
 
@@ -18,28 +19,52 @@ Configure Supabase Auth:
 
 - Email/password with email confirmation and a production SMTP provider.
 - Password minimum 12 characters, appropriate session lifetime, auth endpoint rate limits, leaked-password protection if available and CAPTCHA according to traffic needs.
-- TOTP MFA enabled. Organizers and admins must enroll and verify it in Account settings or the studio gate.
-- Site URL = your canonical HTTPS domain. Add exact redirect URLs for `/dashboard` and `/reset-password`, plus only the local/staging URLs you use. Avoid wildcard production redirect URLs.
+- TOTP MFA enabled. Privileged operators must enroll and verify it in Account settings or the studio gate.
+- Site URL = your canonical HTTPS domain. Add exact redirect URLs for `/api/auth/callback`, `/auth/confirmed`, `/dashboard` and `/reset-password`, plus only the local/staging URLs you use. Avoid wildcard production redirect URLs.
 - Sign up, confirm the first admin's email, then assign ADMIN using the account's UUID in the Supabase SQL editor. Subsequent role changes use the studio.
 - Store authenticator recovery access securely. If an operator loses their factor, verify their identity using your documented recovery process before removing the factor in Supabase. Recovery must never bypass the studio's AAL2 requirement.
 
 Suspending an account stops application API actions and private RLS reads. Existing access JWTs may remain cryptographically valid until expiry; the application reads current account status for every request. **Sign out other sessions** revokes other refresh sessions; short-lived access tokens expire according to your Supabase policy.
 
+### Social sign-in providers
+
+The app supports email/password, Google, Microsoft and Discord. Provider secrets belong in **Supabase Auth → Providers**, never the browser or this repository.
+
+| Sign-in option | Configure in the provider console                                                                        | Supabase provider |
+| -------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| Google         | OAuth web client ID/secret; authorized redirect URI shown in Supabase                                    | Google            |
+| Microsoft      | Microsoft Entra app/client ID and secret; supported account/tenant types; redirect URI shown in Supabase | Azure (Microsoft) |
+| Discord        | Discord OAuth2 application/client ID and secret; redirect URI shown in Supabase                          | Discord           |
+| Email          | Email/password enabled, confirmations and production SMTP                                                | Email             |
+
+The upstream provider redirect is normally `https://YOUR-PROJECT.supabase.co/auth/v1/callback`; use the exact URI shown by your Supabase project, including any custom Auth domain. The separate **application** callback `https://YOUR-DOMAIN/api/auth/callback` must be in Supabase's redirect allowlist. Microsoft uses the `azure` provider identifier internally. Configure the Microsoft tenant according to whether you support personal, work/school, or one organization's accounts.
+
+Then enable each desired method in **Organizer studio → Settings → Sign-in & accounts**. Live login shows methods only when both the admin switch and Supabase provider configuration are enabled. Confirm the real provider flow with a test account before opening it to players. Email is enabled by default; Google, Microsoft and Discord default to disabled in a live database.
+
+Login settings are independent of legal/contact settings. You can pause all **new** sign-ins, pause new accounts while allowing existing users to log in, or switch individual methods. Existing application sessions stay active so a signed-in admin can restore access. Account suspension remains the way to revoke a user's application access. If every administrator signs out while sign-ins are paused, restore access through the Supabase SQL editor:
+
+```sql
+update public.site_settings set login_enabled=true,email_login_enabled=true where id=true;
+```
+
+OAuth exchanges stay on the server. Flow data is encrypted in a Secure/HttpOnly/SameSite cookie, and returned provider tokens are checked with the selected provider to prevent changing Supabase's authorize URL to a disabled provider. The application receives its own access/refresh tokens through a one-use encrypted handoff, never an OAuth token in a redirect URL. Direct Supabase login tokens cannot authorize themselves for application APIs/private RLS reads; each accepted session is recorded server-side. The account-creation database trigger also enforces signup/provider switches against direct Auth API requests.
+
 ## 3. Environment variables
 
 Set these in Vercel Production (and separately for Preview/Staging):
 
-| Variable                        | Purpose                                                         |
-| ------------------------------- | --------------------------------------------------------------- |
-| `NEXT_PUBLIC_DEMO_MODE=false`   | Explicit live build                                             |
-| `NEXT_PUBLIC_SITE_URL`          | Canonical HTTPS origin, no path/query/credentials               |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase HTTPS origin                                           |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser-safe anon/publishable key                               |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Server-only service role                                        |
-| `RAZORPAY_KEY_ID`               | Test/live provider key ID                                       |
-| `RAZORPAY_KEY_SECRET`           | Server-only payment secret                                      |
-| `RAZORPAY_WEBHOOK_SECRET`       | Separate random webhook secret, at least 32 characters          |
-| `CRON_SECRET`                   | Optional scheduler bearer secret, at least 32 random characters |
+| Variable                        | Purpose                                                                 |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DEMO_MODE=false`   | Explicit live build                                                     |
+| `NEXT_PUBLIC_SITE_URL`          | Canonical HTTPS origin, no path/query/credentials                       |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase HTTPS origin                                                   |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser-safe anon/publishable key                                       |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server-only service role                                                |
+| `AUTH_COOKIE_SECRET`            | Server-only random OAuth-flow encryption secret, at least 32 characters |
+| `RAZORPAY_KEY_ID`               | Test/live provider key ID                                               |
+| `RAZORPAY_KEY_SECRET`           | Server-only payment secret                                              |
+| `RAZORPAY_WEBHOOK_SECRET`       | Separate random webhook secret, at least 32 characters                  |
+| `CRON_SECRET`                   | Optional scheduler bearer secret, at least 32 random characters         |
 
 All three Razorpay values may be omitted for a free-event deployment. If any is supplied, supply all three. Paid registration remains unavailable without payment credentials. Never put server secrets in a `NEXT_PUBLIC_` variable or commit a real `.env` file. The configuration checker validates shape, not provider authorization.
 
@@ -94,11 +119,13 @@ Monitor scheduler failures and validate one day-before and one check-in reminder
 
 ## 8. Acceptance and operations
 
-Use separate USER, ORGANIZER A, ORGANIZER B and ADMIN test accounts:
+Use separate USER, ORGANIZER and ADMIN test accounts:
 
 - Verify email delivery, signup, recovery and password changes.
 - Verify password-only privileged sessions cannot enter the studio; verify MFA setup, challenge and recovery operations.
-- Confirm an organizer cannot read/export/edit another organizer's private entries, refunds or tournaments.
+- Confirm guests, users and organizers see no admin links and cannot access the admin workspace/API, including exports and login settings.
+- Test email/password and each configured OAuth provider, provider cancellation, expired/tampered callbacks, linked accounts, disabled methods, signup pause and global login pause. Verify an existing admin session stays available during a pause.
+- Confirm the minimum Chess.com account-age setting saves/reloads and rejects an account younger than the chosen number of days.
 - Suspend a test account, confirm its existing session is denied, then restore it.
 - Test free/paid/manual-approval entries, duplicate username case, capacity, eligibility, deadline, check-in and withdrawal.
 - Attempt stale tournament edits and changes to fees/eligibility with active entries. Confirm cancellation notifications/refund queue and that cancelled/completed events cannot reopen.

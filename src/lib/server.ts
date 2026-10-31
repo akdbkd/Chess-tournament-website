@@ -41,6 +41,23 @@ export async function user(req: NextRequest): Promise<Profile> {
   const claims = JSON.parse(
     Buffer.from(token.split(".")[1], "base64url").toString(),
   );
+  const session = checked(
+    await client
+      .from("auth_login_sessions")
+      .select("provider")
+      .eq(
+        "session_id",
+        claims.session_id || "00000000-0000-0000-0000-000000000000",
+      )
+      .eq("user_id", data.user.id)
+      .maybeSingle(),
+  );
+  if (!session)
+    throw new HttpError(
+      401,
+      "Please sign in again using an enabled sign-in option.",
+      "LOGIN_SESSION_REQUIRED",
+    );
   return { ...p.data, email: data.user.email, aal: claims.aal };
 }
 export function privileged(p: Profile) {

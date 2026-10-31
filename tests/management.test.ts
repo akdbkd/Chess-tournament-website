@@ -52,7 +52,16 @@ before(async () => {
   await pg.exec(
     await readFile(
       new URL(
-        "../supabase/migrations/20261031_production_hardening.sql",
+        "../supabase/migrations/20261031000000_production_hardening.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  await pg.exec(
+    await readFile(
+      new URL(
+        "../supabase/migrations/20261031010000_identity_controls.sql",
         import.meta.url,
       ),
       "utf8",

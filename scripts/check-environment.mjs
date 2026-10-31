@@ -13,6 +13,7 @@ if (!demo) {
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
+    "AUTH_COOKIE_SECRET",
     "NEXT_PUBLIC_SITE_URL",
   ])
     if (!process.env[name]) problems.push(`${name} is required.`);
@@ -40,6 +41,13 @@ if (!demo) {
   )
     problems.push(
       "The service-role key must be different from the public anon key.",
+    );
+  if (
+    process.env.AUTH_COOKIE_SECRET &&
+    process.env.AUTH_COOKIE_SECRET.length < 32
+  )
+    problems.push(
+      "AUTH_COOKIE_SECRET must contain at least 32 random characters.",
     );
   const paymentNames = [
     "RAZORPAY_KEY_ID",

@@ -16,6 +16,8 @@ import type {
   Post,
   Notice,
 } from "@/lib/types";
+import type { SiteSettings } from "@/lib/settings";
+import { defaultSettings } from "@/lib/settings";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 type Store = {
   tournaments: Tournament[];
@@ -24,15 +26,7 @@ type Store = {
   posts: Post[];
   notices: Notice[];
   profile: Profile | null;
-  settings: {
-    support_email: string;
-    community_enabled: boolean;
-    registrations_enabled: boolean;
-    announcement: string;
-    operator_name: string;
-    jurisdiction: string;
-    retention_days: number;
-  } | null;
+  settings: SiteSettings | null;
 };
 type App = Store & {
   ready: boolean;
@@ -58,7 +52,14 @@ const initial: Store = {
   posts: demoMode ? samplePosts : [],
   notices: [],
   profile: null,
-  settings: null,
+  settings: demoMode
+    ? {
+        ...defaultSettings,
+        google_login_enabled: true,
+        microsoft_login_enabled: true,
+        discord_login_enabled: true,
+      }
+    : null,
 };
 export function Provider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store>(initial),
@@ -87,9 +88,13 @@ export function Provider({ children }: { children: React.ReactNode }) {
         api("posts"),
         api("settings/public"),
       ]);
-      const me = session
-        ? await api("me")
-        : { profile: null, registrations: [], saved: [], notices: [] };
+      const authFlow =
+        window.location.pathname.startsWith("/auth/") ||
+        window.location.pathname === "/reset-password";
+      const me =
+        session && !authFlow
+          ? await api("me")
+          : { profile: null, registrations: [], saved: [], notices: [] };
       const current = (await supabase?.auth.getSession())?.data.session;
       if (
         refreshGeneration.current !== generation ||
@@ -114,7 +119,11 @@ export function Provider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const s = JSON.parse(raw);
           if (Array.isArray(s.tournaments) && Array.isArray(s.registrations))
-            setStore({ ...initial, ...s });
+            setStore({
+              ...initial,
+              ...s,
+              settings: { ...initial.settings, ...s.settings },
+            });
         }
       } catch {}
       setReady(true);

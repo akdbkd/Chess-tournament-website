@@ -11,7 +11,7 @@ npm ci
 NEXT_PUBLIC_DEMO_MODE=true npm run dev
 ```
 
-Open `http://localhost:3000`. Use **Join the arena → Explore as a demo player**, or **Organizer studio → Explore the demo studio**. Demo activity lives in browser localStorage; entries, payments, standings and player counts are illustrative. Live account mutations are rejected in demo mode. Demo builds are excluded from search indexing.
+Open `http://localhost:3000`. Use **Join the arena → Explore as a demo player**, or **Join the arena → Explore as a demo admin**. Demo activity lives in browser localStorage; entries, payments, standings and player counts are illustrative. Live account mutations are rejected in demo mode. Demo builds are excluded from search indexing.
 
 For a production-mode demo preview:
 
@@ -24,18 +24,19 @@ NEXT_PUBLIC_DEMO_MODE=true npm start
 
 Follow [the deployment runbook](docs/DEPLOYMENT.md). Copy `.env.example` to `.env.local` for local live development, and set environment variables directly in your hosting provider for deployment. **Do not commit service keys.** Public variables are baked into the browser bundle; rebuild after changing them.
 
-1. Create a Supabase project. For a new database run `supabase/schema.sql`. For an existing database from the previous branch, back it up and apply **only** `supabase/migrations/20261031_production_hardening.sql`.
+1. Create a Supabase project. For a new database run `supabase/schema.sql`. For an existing database, back it up and apply the pending migrations in order: `20261031000000_production_hardening.sql`, then `20261031010000_identity_controls.sql`. If release 1.1.0 is already installed, apply only the identity-controls migration.
 2. Configure Supabase email confirmations, production SMTP, TOTP MFA, password policy, rate limits and redirect URLs.
-3. Sign up and verify your first administrator. Assign the initial role in the SQL editor using that account's actual auth UUID:
+3. Configure a server-only `AUTH_COOKIE_SECRET` with at least 32 random characters. In Supabase Auth, configure Google, Microsoft (Azure) and Discord using your provider client IDs/secrets and callback URLs, then enable the desired methods in **Settings → Sign-in & accounts**. Email/password is enabled by default; social providers start disabled.
+4. Sign up and verify your first administrator. Assign the initial role in the SQL editor using that account's actual auth UUID:
 
    ```sql
    update public.profiles set role = 'ADMIN' where id = 'YOUR-AUTH-USER-UUID';
    ```
 
-4. Sign in, set up and verify an authenticator, then open the studio. Fill in operator identity, support email, jurisdiction/contact address and retention review period in **Settings**. Paid events cannot be published until operator details are set.
-5. Configure Razorpay test keys and the signed webhook. Complete the provider acceptance checks in the runbook before using live keys.
-6. Import this repository into Vercel with the Next.js preset, Node 22+, `npm ci` and `npm run build`. Set `NEXT_PUBLIC_DEMO_MODE=false` and your canonical HTTPS domain. Leave the output directory at its default.
-7. Configure the optional authenticated maintenance scheduler for reminders and expired-hold cleanup. Deploy and perform live acceptance checks.
+5. Sign in, set up and verify an authenticator, then open the studio. Fill in operator identity, support email, jurisdiction/contact address and retention review period in **Settings**. Paid events cannot be published until operator details are set.
+6. Configure Razorpay test keys and the signed webhook. Complete the provider acceptance checks in the runbook before using live keys.
+7. Import this repository into Vercel with the Next.js preset, Node 22+, `npm ci` and `npm run build`. Set `NEXT_PUBLIC_DEMO_MODE=false` and your canonical HTTPS domain. Leave the output directory at its default.
+8. Configure the optional authenticated maintenance scheduler for reminders and expired-hold cleanup. Deploy and perform live acceptance checks.
 
 `npm run check:production` rejects demo mode, missing live configuration, insecure domain values, incomplete payment credentials and weak scheduler/webhook secrets. `npm run build` runs configuration validation automatically. No configured provider accounts are present in this execution environment; a passing demo build does not verify live payments, email, MFA delivery or deployment.
 
@@ -45,6 +46,8 @@ Follow [the deployment runbook](docs/DEPLOYMENT.md). Copy `.env.example` to `.en
 - Separate website identities and Chess.com players; registrations may be submitted with a player's permission. Public Chess.com profile/rating/account-age checks and case-insensitive duplicate prevention.
 - Row-locked capacity reservations, free/paid entries, approval, check-in, withdrawal, recorded rules acceptance and notifications.
 - Server-created Razorpay orders, captured-payment verification, signed exact-body webhooks, permanent order ledger, late-payment recovery and full refunds.
+- Email/password, Google, Microsoft and Discord login with server-controlled enable/disable switches, a global new-sign-in switch and a separate new-account switch. OAuth uses PKCE, encrypted flow cookies and one-use handoffs; the provider token is verified against the selected provider.
+- Admin links and the `/admin` workspace/API are visible/available only to ADMIN accounts. Direct private database reads also require an application-authorized session. Existing users must sign in once after applying the identity-controls migration.
 - Authenticator setup and verification. All organizer/admin API operations require a verified AAL2 session; trusted roles come from the database.
 - Searchable, paginated tournament, registration, refund, user, moderation, report and audit management; per-event CSV exports up to 10,000 historical entries (larger histories require a database export).
 - Confirmed role changes and suspensions, ownership-scoped organizer access, reversible post hiding/locking, reply review and deletion, report resolution and transactional audit records.
@@ -63,7 +66,7 @@ Unpaid holds expire after 15 minutes. A late captured payment is queued for refu
 
 ## Admin and event operations
 
-Users cannot assign themselves roles. Administrators cannot change their own access. Suspended accounts are rejected by the API and cannot directly read private records through RLS. Organizers manage only their own tournaments, registrations, exports, results and refunds. Admin access is verified on every request.
+Users cannot assign themselves roles. Administrators cannot change their own access. Suspended accounts are rejected by the API and cannot directly read private records through RLS. The admin workspace and its collection/export/settings endpoints require ADMIN. The legacy ORGANIZER role retains ownership-scoped event mutation APIs but has no admin navigation or workspace access. Admin access is verified on every request.
 
 Editors save the version they loaded; stale edits must be reloaded. Existing fees cannot change after entries begin. Eligibility and time control cannot change with active entries. Publish a new event for a different competition. Use **Cancel event** to notify players and queue refunds. Closing registration alone does not cancel entries.
 
@@ -75,6 +78,8 @@ registered_player,6.5,6,1,0,30
 ```
 
 Chess.com does not provide a public tournament write API. Organizers supply the real HTTPS lobby URL and import reviewed results. No remote tournament creation, player account login, automatic standings synchronization or proprietary cheat detection is claimed. Classical eligibility uses the available Chess.com rapid rating.
+
+The tournament editor includes **Minimum Chess.com account age (days)**. A value of 0 removes the age minimum; otherwise the player’s Chess.com join date is checked at registration by both the API and database. This refers to the player account, not the website account.
 
 Displayed event times use Asia/Kolkata (IST); editor inputs use the organizer's browser timezone and are stored in UTC.
 

@@ -84,45 +84,17 @@ export function Admin() {
   }
   useEffect(() => {
     if (
-      app.profile &&
-      (app.demo || (app.profile.role !== "USER" && app.profile.aal === "aal2"))
+      app.profile?.role === "ADMIN" &&
+      (app.demo || app.profile.aal === "aal2")
     )
       void refresh();
   }, [app.profile, app.tournaments, app.registrations]);
-  if (!app.profile || app.profile.role === "USER")
+  if (app.profile?.role !== "ADMIN")
     return (
       <div className="page">
         <Empty
-          title="Your tournament. Your arena."
-          description="The organizer studio brings registration management, event publishing, payments, and standings into one place. Organizer access is assigned by an administrator."
-          action={
-            <div className="button-row">
-              {!app.profile && (
-                <button
-                  className="button"
-                  onClick={() => app.setAuthOpen(true)}
-                >
-                  Sign in
-                  <ArrowUpRight size={16} />
-                </button>
-              )}
-              {app.demo && (
-                <button
-                  className="button secondary"
-                  onClick={() =>
-                    app.setProfile({
-                      id: "demo-user",
-                      display_name: app.profile?.display_name || "Alex Morgan",
-                      role: "ADMIN",
-                      email: "demo@example.com",
-                    })
-                  }
-                >
-                  Explore the demo studio
-                </button>
-              )}
-            </div>
-          }
+          title="Page unavailable"
+          description="This page is not available for your account."
         />
       </div>
     );
@@ -758,9 +730,10 @@ function TournamentEditor({
             />
           </label>
           <label>
-            Minimum account age (days)
+            Minimum Chess.com account age (days)
             <input
               name="min_account_days"
+              aria-describedby="account-age-help"
               type="number"
               min={0}
               max={3650}
@@ -768,6 +741,11 @@ function TournamentEditor({
               required
             />
           </label>
+          <p id="account-age-help" className="muted small-text">
+            The player’s Chess.com account must be at least this many days old
+            on registration day. Use 0 for no minimum. This does not refer to
+            their Knightfall account.
+          </p>
           <label>
             Status
             <select name="status" defaultValue={value?.status || "draft"}>

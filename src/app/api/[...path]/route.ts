@@ -21,6 +21,11 @@ import {
 } from "@/lib/validation";
 import { readBody, parseJson } from "@/lib/http";
 import { adminCollection, exportRegistrations } from "@/lib/admin-server";
+import {
+  settingColumns,
+  siteSettingsSchema,
+  loginControlsSchema,
+} from "@/lib/settings";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -284,12 +289,7 @@ async function handle(req: NextRequest, ctx: Context) {
     if (path === "settings/public" && method === "GET")
       return NextResponse.json(
         checked(
-          await db()
-            .from("site_settings")
-            .select(
-              "support_email,community_enabled,registrations_enabled,announcement,operator_name,jurisdiction,retention_days",
-            )
-            .single(),
+          await db().from("site_settings").select(settingColumns).single(),
         ),
       );
     if (path === "posts" && method === "GET")
@@ -386,7 +386,7 @@ async function handle(req: NextRequest, ctx: Context) {
       });
     }
     if (path === "admin" && method === "GET") {
-      await organizer(p);
+      administrator(p);
       let q = db()
         .from("tournaments")
         .select("*")
@@ -941,19 +941,20 @@ async function handle(req: NextRequest, ctx: Context) {
       );
       return NextResponse.json({ ok: true });
     }
+    if (path === "admin/auth-settings" && method === "POST") {
+      administrator(p);
+      const values = loginControlsSchema.parse(body);
+      checked(
+        await db().rpc("save_auth_settings", {
+          p_actor: p.id,
+          p_values: values,
+        }),
+      );
+      return NextResponse.json({ ok: true });
+    }
     if (path === "admin/settings" && method === "POST") {
       administrator(p);
-      const v = z
-        .object({
-          support_email: z.string().email(),
-          community_enabled: z.boolean(),
-          registrations_enabled: z.boolean(),
-          announcement: z.string().trim().max(500),
-          operator_name: z.string().trim().min(2).max(160),
-          jurisdiction: z.string().trim().min(2).max(160),
-          retention_days: z.number().int().min(30).max(3650),
-        })
-        .parse(body);
+      const v = siteSettingsSchema.parse(body);
       checked(
         await db().rpc("save_site_settings", { p_actor: p.id, p_values: v }),
       );

@@ -20,6 +20,7 @@ test("configuration validation rejects insecure domains and does not print secre
     NEXT_PUBLIC_SUPABASE_URL: "https://db.example",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "public_test_key",
     SUPABASE_SERVICE_ROLE_KEY: "private_test_key",
+    AUTH_COOKIE_SECRET: "test_cookie_secret_with_32_characters_minimum",
   };
   assert.equal(check(env, true).status, 0);
   for (const url of [

@@ -20,6 +20,14 @@ Reviewed 31 October 2026 against `codex/premium-arena-design` (`ed9327b`). This 
 | Abuse                  | Distributed PostgreSQL limits for live public reads/user mutations; dedicated lookup/post/comment/report/export limits; Supabase auth limits configured separately |
 | Operations             | Secret-safe configuration checks, redacted structured error IDs, CI/dependency audit, server-only scheduler, idempotent reminders                                  |
 
+## Sign-in controls (1.2.0)
+
+Only ADMIN accounts can see admin navigation or use the `/admin` workspace/API, including collection/export/settings routes. Authenticator verification is still required for privileged operations. Existing ownership checks on event mutation APIs remain in place for the legacy ORGANIZER role.
+
+All new application logins use the server's credential/PKCE exchange. A service-only session registry binds the verified Supabase session UUID to its actual sign-in method; raw browser-provided tokens cannot register themselves. Private RLS reads check the same registry. New-account/provider switches are also enforced by the profile-creation database trigger. Switches pause new sign-ins, while already-authorized sessions continue until expiry/sign-out/suspension.
+
+OAuth provider selection is encrypted into a Secure/HttpOnly/SameSite flow cookie. The server redeems the PKCE code and verifies the returned provider token against that provider's user-info endpoint, including for linked identities. Tokens transfer to the browser via an opaque one-use handoff whose payload is encrypted with a purpose-specific key derived from `AUTH_COOKIE_SECRET`; no OAuth tokens are put in application redirect URLs. Handoffs expire after 90 seconds and are cleaned by maintenance. Login session references are pruned when the corresponding Supabase Auth session no longer exists.
+
 ## Boundaries requiring live verification
 
 Configure and verify Supabase email confirmation/SMTP, password policy, TOTP, session lifetime, CAPTCHA and auth rate limits in the provider account. Run real test-mode checkout/refund/webhook flows; mocked API and embedded PostgreSQL tests do not validate provider credentials, network behavior or webhook delivery. Test migration/restore and concurrent traffic against staging PostgreSQL before launch at scale.

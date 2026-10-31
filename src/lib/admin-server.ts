@@ -15,7 +15,7 @@ export async function adminCollection(
   p: Profile,
   resource: string,
 ) {
-  await organizer(p);
+  administrator(p);
   if (
     ![
       "tournaments",
@@ -99,7 +99,7 @@ export async function adminCollection(
 }
 
 export async function exportRegistrations(req: NextRequest, p: Profile) {
-  await organizer(p);
+  administrator(p);
   await rate("export:" + p.id, 3, 300);
   const id = z
     .string()

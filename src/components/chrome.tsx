@@ -99,14 +99,16 @@ export function Chrome({ children }: { children: React.ReactNode }) {
             <Bookmark size={19} />
             Saved tournaments
           </Link>
-          <Link
-            className={"nav-link " + (path === "/admin" ? "selected" : "")}
-            href="/admin"
-            onClick={() => setMobile(false)}
-          >
-            <ShieldCheck size={19} />
-            Organizer studio
-          </Link>
+          {app.profile?.role === "ADMIN" && (
+            <Link
+              className={"nav-link " + (path === "/admin" ? "selected" : "")}
+              href="/admin"
+              onClick={() => setMobile(false)}
+            >
+              <ShieldCheck size={19} />
+              Organizer studio
+            </Link>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="club-card">
@@ -158,7 +160,9 @@ export function Chrome({ children }: { children: React.ReactNode }) {
                   : path.startsWith("/tournaments/")
                     ? "Tournament details"
                     : path === "/admin"
-                      ? "Organizer studio"
+                      ? app.profile?.role === "ADMIN"
+                        ? "Organizer studio"
+                        : "Page unavailable"
                       : path === "/dashboard"
                         ? "Your playbook"
                         : path.slice(1).replace("-", " ")}
