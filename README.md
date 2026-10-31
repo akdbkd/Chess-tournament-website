@@ -121,3 +121,7 @@ tests/                   Unit, API, SQL and browser regression checks
 ```
 
 The artwork is included as optimized WebP in `public/art/`. Self-hosted fonts carry their SIL Open Font License files in `public/fonts/`.
+
+## Local Supabase fixtures
+
+For real local Auth/database testing (admin, organizer, player and suspended accounts), follow [docs/LOCAL_TESTING.md](docs/LOCAL_TESTING.md). Start Supabase locally, configure its local keys with demo mode off, then run `npm run seed:local` and `npm run dev`. This separate seed refuses hosted URLs and includes repeatable events, entries, moderation and synthetic payment scenarios.

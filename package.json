@@ -12,7 +12,8 @@
     "format": "prettier --write src tests scripts next.config.ts",
     "test:browser": "node tests/browser.cjs",
     "prebuild": "node --env-file-if-exists=.env.local scripts/check-environment.mjs",
-    "check:production": "node --env-file-if-exists=.env.local scripts/check-environment.mjs --production"
+    "check:production": "node --env-file-if-exists=.env.local scripts/check-environment.mjs --production",
+    "seed:local": "node --env-file=.env.local --import tsx scripts/seed-local.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
