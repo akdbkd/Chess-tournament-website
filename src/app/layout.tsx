@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { Provider } from "@/components/provider";
 import { Chrome } from "@/components/chrome";
 import "./globals.css";
@@ -20,12 +21,18 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: { icon: "/favicon.svg" },
+  robots:
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true"
+      ? { index: false, follow: false }
+      : undefined,
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Per-request rendering lets Next apply the CSP nonce to hydration scripts.
+  await headers();
   return (
     <html lang="en">
       <body>

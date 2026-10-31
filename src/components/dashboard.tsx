@@ -19,6 +19,7 @@ import { Empty, TournamentCard, Badge, Modal, DownloadCalendar } from "./ui";
 import { api, supabase } from "@/lib/supabase";
 import { date, time, money } from "@/lib/data";
 import { openPayment } from "./forms";
+import { AccountSecurity } from "./account-security";
 export function Dashboard() {
   const app = useApp(),
     params = useSearchParams(),
@@ -396,6 +397,7 @@ export function Dashboard() {
           </button>
         </div>
       )}
+      {tab === "settings" && <AccountSecurity />}
       {withdraw && (
         <Modal title="Withdraw this player?" onClose={() => setWithdraw(null)}>
           <p>

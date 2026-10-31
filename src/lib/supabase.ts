@@ -1,6 +1,6 @@
 "use client";
 import { createClient } from "@supabase/supabase-js";
-export const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
+export const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 export const supabase =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -23,6 +23,9 @@ export async function api(path: string, options: RequestInit = {}) {
   });
   const data = await res.json();
   if (!res.ok)
-    throw new Error(data.error || "Something went wrong. Please try again.");
+    throw Object.assign(
+      new Error(data.error || "Something went wrong. Please try again."),
+      { code: data.code, status: res.status },
+    );
   return data;
 }
